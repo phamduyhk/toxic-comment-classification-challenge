@@ -1,0 +1,161 @@
+# coding: utf-8
+import numpy as np
+import random
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from IPython.display import HTML
+
+import torchtext
+import pandas as pd
+import datetime
+
+from utils.dataloader import Preprocessing
+from utils.transformer import TransformerClassification
+
+preprocessing = Preprocessing()
+
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        nn.init.kaiming_normal_(m.weight)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0.0)
+
+
+def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs):
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("using device: ", device)
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        net = nn.DataParallel(net)
+
+    net.to(device)
+
+    torch.backends.cudnn.benchmark = True
+
+    for epoch in range(num_epochs):
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                net.train()
+            else:
+                net.eval()
+
+            epoch_loss = 0.0
+            epoch_corrects = 0
+
+            for batch in (dataloaders_dict[phase]):
+
+                inputs = batch.Text[0].to(device)
+                labels = batch.Label.to(device)
+
+                optimizer.zero_grad()
+
+                with torch.set_grad_enabled(phase == 'train'):
+                    input_pad = 1
+                    input_mask = (inputs != input_pad)
+
+                    outputs, _, _ = net(inputs, input_mask)
+                    loss = criterion(outputs, labels)
+
+                    _, preds = torch.max(outputs, 1)
+
+                    if phase == 'train':
+                        loss.backward()
+                        optimizer.step()
+
+                    epoch_loss += loss.item() * inputs.size(0)
+                    epoch_corrects += torch.sum(preds == labels.data)
+
+            epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
+            epoch_acc = epoch_corrects.double(
+            ) / len(dataloaders_dict[phase].dataset)
+
+            print('Epoch {}/{} | {:^5} |  Loss: {:.4f} Acc: {:.4f}'.format(epoch + 1, num_epochs,
+                                                                           phase, epoch_loss, epoch_acc))
+
+    return net
+
+
+def main():
+    torch.manual_seed(1234)
+    np.random.seed(1234)
+    random.seed(1234)
+
+    path = "./data/"
+    train_file = "train.csv"
+    test_file = "test.csv"
+    vector_list = "./data/wiki-news-300d-1M.vec"
+    train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
+                                                             vectors=vector_list, max_length=256,
+                                                             batch_size=1280)
+
+    dataloaders_dict = {"train": train_dl, "val": val_dl}
+
+    net = TransformerClassification(
+        text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=256, output_dim=2)
+
+    net.train()
+
+    net.net3_1.apply(weights_init)
+    net.net3_2.apply(weights_init)
+
+    print('done setup network')
+
+    criterion = nn.CrossEntropyLoss()
+
+    learning_rate = 2e-5
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+
+    num_epochs = 4
+    net_trained = train_model(net, dataloaders_dict,
+                              criterion, optimizer, num_epochs=num_epochs)
+
+    # load net if weight avaiable
+    # net_trained = torch.load("net_trained.weights", map_location=device)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        net_trained = nn.DataParallel(net_trained)
+
+    # net_trainedを保存
+    torch.save(net_trained, "net_trained.weights")
+
+    net_trained.eval()
+    net_trained.to(device)
+
+    epoch_corrects = 0
+
+    predicts = []
+
+    print("test dl {}".format(test_dl))
+    print(type(test_dl))
+    for batch in (test_dl):
+
+        inputs = batch.Text[0].to(device)
+
+        with torch.set_grad_enabled(False):
+            input_pad = 1
+            input_mask = (inputs != input_pad)
+
+            outputs, _, _ = net_trained(inputs, input_mask)
+            _, preds = torch.max(outputs, 1)
+
+            preds = preds.numpy().tolist()
+
+            predicts += preds
+
+    print(predicts[:5])
+    df = pd.DataFrame(predicts)
+    df.to_csv("output_test.csv", index=False)
+    sample = pd.read_csv("./data/sample_submission.csv")
+    sample['prediction'] = predicts
+    sample.to_csv("output_{}.csv".format(
+        datetime.datetime.now().date()), index=False)
+
+
+if __name__ == '__main__':
+    main()
