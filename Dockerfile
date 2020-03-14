@@ -18,7 +18,7 @@ RUN apt-get install git-lfs
 RUN pip3 install tensorflow
 
 
-COPY src/requirements.txt ./
+COPY ./requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 WORKDIR /usr/src/data
 RUN wget https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
