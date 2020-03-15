@@ -13,6 +13,7 @@ import datetime
 
 from utils.dataloader import Preprocessing
 from utils.transformer import TransformerClassification
+from sklearn.metrics import roc_auc_score
 
 preprocessing = Preprocessing()
 
@@ -66,14 +67,15 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                         loss.backward()
                         optimizer.step()
 
+                    # validation mode
                     epoch_loss += loss.item() * inputs.size(0)
-                    epoch_corrects += torch.sum(preds == labels.data)
+                    epoch_corrects += roc_auc_score(labels.data, preds)
 
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
             epoch_acc = epoch_corrects.double(
-            ) / len(dataloaders_dict[phase].dataset)
+            ) / len(dataloaders_dict[phase])
 
-            print('Epoch {}/{} | {:^5} |  Loss: {:.4f} Acc: {:.4f}'.format(epoch + 1, num_epochs,
+            print('Epoch {}/{} | {:^5} |  Loss: {:.4f} ROC_AUC: {:.4f}'.format(epoch + 1, num_epochs,
                                                                            phase, epoch_loss, epoch_acc))
 
     return net

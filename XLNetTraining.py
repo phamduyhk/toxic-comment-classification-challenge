@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("device: {}".format(device))
 
@@ -26,7 +26,7 @@ test_sentences = test_df['comment_text']
 
 
 # define output dataframe
-output = pd.read_csv("./data/sample_submission.csv")
+sample = pd.read_csv("./data/sample_submission.csv")
 
 for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']:
     labels = df[label].values
@@ -227,9 +227,9 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
         pred = logits.detach().cpu().numpy().tolist()
         predicts += pred
 
-    output[label] = predicts
+    sample[label] = predicts
 
 
 # save output
 now = datetime.datetime.now()
-output.to_csv("submission_XLNET_{}.csv".format(now.timestamp()), index=False)
+sample.to_csv("submission_XLNET_{}.csv".format(now.timestamp()), index=False)
