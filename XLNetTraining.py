@@ -35,11 +35,10 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
         'xlnet-base-cased', do_lower_case=True)
 
     tokenized_texts = [tokenizer.tokenize(sent) for sent in sentences]
-    print("Tokenize the first sentence:")
-    print(tokenized_texts[0])
+    #print(tokenized_texts[0])      # not working on ubuntu
 
     test_tokenized_texts = [tokenizer.tokenize(sent) for sent in test_sentences]
-    print("test sentence sample: {}".format(test_tokenized_texts[0]))
+    #print("test sentence sample: {}".format(test_tokenized_texts[0]))  # not working on ubuntu
 
 
     # Set the maximum sequence length. The longest sequence in our training set is 47, but we'll leave room on the end anyway.
