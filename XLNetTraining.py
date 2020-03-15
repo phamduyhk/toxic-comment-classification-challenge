@@ -14,13 +14,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 print("device: {}".format(device))
 
 df = pd.read_csv("./data/train.csv")
-sentences = df['question_text'].values
-labels = df['target'].values
+sentences = df['comment_text'].values
+labels = df['toxic'].values
 
 tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
 
