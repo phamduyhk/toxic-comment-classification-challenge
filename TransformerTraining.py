@@ -91,7 +91,7 @@ def main():
     vector_list = "./data/wiki-news-300d-1M.vec"
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=256,
-                                                             batch_size=1280)
+                                                             batch_size=3000)
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
