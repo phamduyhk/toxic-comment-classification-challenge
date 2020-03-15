@@ -27,7 +27,7 @@ def weights_init(m):
 
 def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label):
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print("using device: ", device)
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -115,14 +115,14 @@ def main():
         learning_rate = 2e-5
         optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
-        num_epochs = 10
+        num_epochs = 15
         net_trained = train_model(net, dataloaders_dict,
                                 criterion, optimizer, num_epochs=num_epochs, label=label)
 
         # load net if weight avaiable
         # net_trained = torch.load("net_trained.weights", map_location=device)
-        
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         # if torch.cuda.device_count() > 1:
         #     print("Let's use", torch.cuda.device_count(), "GPUs!")
         #     net_trained = nn.DataParallel(net_trained)
