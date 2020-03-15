@@ -20,7 +20,7 @@ RUN pip3 install tensorflow
 
 COPY ./requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
-WORKDIR /usr/src/data
+WORKDIR /usr/
 RUN wget https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
 RUN unzip wiki-news-300d-1M.vec.zip
 WORKDIR /usr/src/
