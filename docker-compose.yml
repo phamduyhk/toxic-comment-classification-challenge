@@ -4,6 +4,9 @@ services:
         build: .
         ## roswellにモデルを置くためにマウントする場合
         volumes:
-            - /Users/phamduy/respositories/toxic-comment-classification-challenge:/usr/src/
+            - /home/itolab/temp/toxic-comment-classification-challenge:/usr/src/
         ## runtimeを指定する！！
         runtime: nvidia
+        environment:
+            - NVIDIA_VISIBLE_DEVICES=all
+        command: nvidia-smi
