@@ -24,8 +24,6 @@ sentences = df['comment_text'].values
 test_df = pd.read_csv("./data/test.csv", encoding='utf-8')
 test_sentences = test_df['comment_text']
 
-test_tokenized_texts = [tokenizer.tokenize(sent) for sent in test_sentences]
-print("test sentence sample: {}".format(test_tokenized_texts[0]))
 
 # define output dataframe
 output = pd.read_csv("./data/sample_submission.csv")
@@ -40,11 +38,16 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
     print("Tokenize the first sentence:")
     print(tokenized_texts[0])
 
+    test_tokenized_texts = [tokenizer.tokenize(sent) for sent in test_sentences]
+    print("test sentence sample: {}".format(test_tokenized_texts[0]))
+
+
     # Set the maximum sequence length. The longest sequence in our training set is 47, but we'll leave room on the end anyway.
-    MAX_LEN = 128
+    MAX_LEN = 900
 
     # Use the XLNet tokenizer to convert the tokens to their index numbers in the XLNet vocabulary
     input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
+
     test_input_ids = [tokenizer.convert_tokens_to_ids(
         x) for x in test_tokenized_texts]
 
