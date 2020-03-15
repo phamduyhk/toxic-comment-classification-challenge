@@ -25,7 +25,7 @@ def weights_init(m):
             nn.init.constant_(m.bias, 0.0)
 
 
-def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs):
+def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device: ", device)
@@ -48,9 +48,9 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs):
             epoch_corrects = 0
 
             for batch in (dataloaders_dict[phase]):
-
                 inputs = batch.Text[0].to(device)
-                labels = batch.Label.to(device)
+                labels = getattr(batch,label)
+                labels = labels.to(device)
 
                 optimizer.zero_grad()
 
@@ -95,65 +95,65 @@ def main():
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
-    net = TransformerClassification(
-        text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=256, output_dim=2)
-
-    net.train()
-
-    net.net3_1.apply(weights_init)
-    net.net3_2.apply(weights_init)
-
-    print('done setup network')
-
-    criterion = nn.CrossEntropyLoss()
-
-    learning_rate = 2e-5
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
-
-    num_epochs = 4
-    net_trained = train_model(net, dataloaders_dict,
-                              criterion, optimizer, num_epochs=num_epochs)
-
-    # load net if weight avaiable
-    # net_trained = torch.load("net_trained.weights", map_location=device)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
-        net_trained = nn.DataParallel(net_trained)
-
-    # net_trainedを保存
-    torch.save(net_trained, "net_trained.weights")
-
-    net_trained.eval()
-    net_trained.to(device)
-
-    epoch_corrects = 0
-
-    predicts = []
-
-    print("test dl {}".format(test_dl))
-    print(type(test_dl))
-    for batch in (test_dl):
-
-        inputs = batch.Text[0].to(device)
-
-        with torch.set_grad_enabled(False):
-            input_pad = 1
-            input_mask = (inputs != input_pad)
-
-            outputs, _, _ = net_trained(inputs, input_mask)
-            _, preds = torch.max(outputs, 1)
-
-            preds = preds.numpy().tolist()
-
-            predicts += preds
-
-    print(predicts[:5])
-    df = pd.DataFrame(predicts)
-    df.to_csv("output_test.csv", index=False)
+    # define output dataframe
     sample = pd.read_csv("./data/sample_submission.csv")
-    sample['prediction'] = predicts
-    sample.to_csv("output_{}.csv".format(
+
+    for label in ['toxic','severe_toxic','obscene','threat','insult','identity_hate']:
+        net = TransformerClassification(
+            text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=256, output_dim=2)
+
+        net.train()
+
+        net.net3_1.apply(weights_init)
+        net.net3_2.apply(weights_init)
+
+        print('done setup network with {}'.format(label))
+
+        criterion = nn.CrossEntropyLoss()
+
+        learning_rate = 2e-5
+        optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+
+        num_epochs = 2
+        net_trained = train_model(net, dataloaders_dict,
+                                criterion, optimizer, num_epochs=num_epochs, label=label)
+
+        # load net if weight avaiable
+        # net_trained = torch.load("net_trained.weights", map_location=device)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.device_count() > 1:
+            print("Let's use", torch.cuda.device_count(), "GPUs!")
+            net_trained = nn.DataParallel(net_trained)
+
+        # net_trainedを保存
+        torch.save(net_trained, "net_trained_{}.weights".format(label))
+
+        net_trained.eval()
+        net_trained.to(device)
+
+        epoch_corrects = 0
+
+        predicts = []
+
+        for batch in (test_dl):
+
+            inputs = batch.Text[0].to(device)
+
+            with torch.set_grad_enabled(False):
+                input_pad = 1
+                input_mask = (inputs != input_pad)
+
+                outputs, _, _ = net_trained(inputs, input_mask)
+                _, preds = torch.max(outputs, 1)
+
+                preds = preds.numpy().tolist()
+
+                predicts += preds
+
+        sample[label] = predicts
+
+    # save predictions
+    sample.to_csv("submission_{}.csv".format(
         datetime.datetime.now().date()), index=False)
 
 

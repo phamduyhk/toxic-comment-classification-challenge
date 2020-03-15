@@ -50,7 +50,7 @@ class Preprocessing():
         train_val_ds, test_ds = torchtext.data.TabularDataset.splits(
             path=temp_path, train=train_file,
             test=test_file, format='csv',
-            fields=[('comment_text', TEXT), ('toxic', LABEL1), ('severe_toxic', LABEL2), ('obscene', LABEL3),
+            fields=[('Text', TEXT), ('toxic', LABEL1), ('severe_toxic', LABEL2), ('obscene', LABEL3),
                     ('threat', LABEL4), ('insult', LABEL5), ('identity_hate', LABEL6)])
 
         train_ds, val_ds = train_val_ds.split(
