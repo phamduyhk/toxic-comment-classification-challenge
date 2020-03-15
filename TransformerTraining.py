@@ -145,7 +145,8 @@ def main():
 
                 outputs, _, _ = net_trained(inputs, input_mask)
                 _, preds = torch.max(outputs, 1)
-
+                
+                preds = preds.cpu()
                 preds = preds.numpy().tolist()
 
                 predicts += preds
