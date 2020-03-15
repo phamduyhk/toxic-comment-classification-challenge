@@ -25,9 +25,8 @@ def weights_init(m):
             nn.init.constant_(m.bias, 0.0)
 
 
-def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label):
+def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, device="cpu"):
 
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print("using device: ", device)
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -49,7 +48,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label):
 
             for batch in (dataloaders_dict[phase]):
                 inputs = batch.Text[0].to(device)
-                labels = getattr(batch,label)
+                labels = getattr(batch, label)
                 labels = labels.to(device)
 
                 optimizer.zero_grad()
@@ -90,6 +89,8 @@ def main():
     test_file = "test.csv"
     vector_list = "./data/wiki-news-300d-1M.vec"
     max_sequence_length = 900
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
                                                              batch_size=3000)
@@ -99,9 +100,9 @@ def main():
     # define output dataframe
     sample = pd.read_csv("./data/sample_submission.csv")
 
-    for label in ['toxic','severe_toxic','obscene','threat','insult','identity_hate']:
+    for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']:
         net = TransformerClassification(
-            text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=max_sequence_length, output_dim=2)
+            text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=max_sequence_length, output_dim=2, device=device)
 
         net.train()
 
@@ -117,12 +118,11 @@ def main():
 
         num_epochs = 15
         net_trained = train_model(net, dataloaders_dict,
-                                criterion, optimizer, num_epochs=num_epochs, label=label)
+                                  criterion, optimizer, num_epochs=num_epochs, label=label, device=device)
 
         # load net if weight avaiable
         # net_trained = torch.load("net_trained.weights", map_location=device)
 
-        device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         # if torch.cuda.device_count() > 1:
         #     print("Let's use", torch.cuda.device_count(), "GPUs!")
         #     net_trained = nn.DataParallel(net_trained)
@@ -147,7 +147,7 @@ def main():
 
                 outputs, _, _ = net_trained(inputs, input_mask)
                 _, preds = torch.max(outputs, 1)
-                
+
                 preds = preds.cpu()
                 preds = preds.numpy().tolist()
 

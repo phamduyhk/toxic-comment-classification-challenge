@@ -25,7 +25,7 @@ class Embedder(nn.Module):
 
 class PositionalEncoder(nn.Module):
 
-    def __init__(self, d_model=300, max_seq_len=256):
+    def __init__(self, d_model=300, max_seq_len=256, device="cpu"):
         super().__init__()
 
         self.d_model = d_model
@@ -33,7 +33,6 @@ class PositionalEncoder(nn.Module):
         # 単語の順番（pos）と埋め込みベクトルの次元の位置（i）によって一意に定まる値の表をpeとして作成
         pe = torch.zeros(max_seq_len, d_model)
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         pe = pe.to(device)
 
         for pos in range(max_seq_len):
@@ -171,11 +170,12 @@ class ClassificationHead(nn.Module):
 class TransformerClassification(nn.Module):
     '''Transformerでクラス分類させる'''
 
-    def __init__(self, text_embedding_vectors, d_model=300, max_seq_len=256, output_dim=2):
+    def __init__(self, text_embedding_vectors, d_model=300, max_seq_len=256, output_dim=2, device="cpu"):
         super().__init__()
 
+
         self.net1 = Embedder(text_embedding_vectors)
-        self.net2 = PositionalEncoder(d_model=d_model, max_seq_len=max_seq_len)
+        self.net2 = PositionalEncoder(d_model=d_model, max_seq_len=max_seq_len,device=device)
         self.net3_1 = TransformerBlock(d_model=d_model)
         self.net3_2 = TransformerBlock(d_model=d_model)
         self.net4 = ClassificationHead(output_dim=output_dim, d_model=d_model)
