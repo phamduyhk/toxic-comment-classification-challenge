@@ -89,8 +89,9 @@ def main():
     train_file = "train.csv"
     test_file = "test.csv"
     vector_list = "./data/wiki-news-300d-1M.vec"
+    max_sequence_length = 900
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
-                                                             vectors=vector_list, max_length=256,
+                                                             vectors=vector_list, max_length=max_sequence_length,
                                                              batch_size=3000)
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
@@ -100,7 +101,7 @@ def main():
 
     for label in ['toxic','severe_toxic','obscene','threat','insult','identity_hate']:
         net = TransformerClassification(
-            text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=256, output_dim=2)
+            text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=max_sequence_length, output_dim=2)
 
         net.train()
 
@@ -114,12 +115,13 @@ def main():
         learning_rate = 2e-5
         optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
-        num_epochs = 2
+        num_epochs = 10
         net_trained = train_model(net, dataloaders_dict,
                                 criterion, optimizer, num_epochs=num_epochs, label=label)
 
         # load net if weight avaiable
         # net_trained = torch.load("net_trained.weights", map_location=device)
+        
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # if torch.cuda.device_count() > 1:
         #     print("Let's use", torch.cuda.device_count(), "GPUs!")
