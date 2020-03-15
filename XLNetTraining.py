@@ -42,7 +42,7 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
 
 
     # Set the maximum sequence length. The longest sequence in our training set is 47, but we'll leave room on the end anyway.
-    MAX_LEN = 900
+    MAX_LEN = 32
 
     # Use the XLNet tokenizer to convert the tokens to their index numbers in the XLNet vocabulary
     input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
@@ -140,7 +140,7 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
     train_loss_set = []
 
     # Number of training epochs (authors recommend between 2 and 4)
-    epochs = 2
+    epochs = 4
 
     # trange is a tqdm wrapper around the normal python range
     for _ in trange(epochs, desc="Epoch"):
