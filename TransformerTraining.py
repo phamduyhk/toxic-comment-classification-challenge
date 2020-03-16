@@ -71,7 +71,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                     epoch_loss += loss.item() * inputs.size(0)
                     y_true = labels.data.cpu()
                     preds = preds.cpu()
-                    epoch_corrects += roc_auc_score(labels.data, preds)
+                    epoch_corrects += roc_auc_score(y_true, preds)
 
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
             epoch_acc = epoch_corrects.double(
@@ -97,7 +97,7 @@ def main():
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
-                                                             batch_size=1024)
+                                                             batch_size=512)
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
