@@ -5,7 +5,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from IPython.display import HTML
+from sklearn.metrics import roc_auc_score
 
 import torchtext
 import pandas as pd
@@ -13,9 +13,10 @@ import datetime
 
 from utils.dataloader import Preprocessing
 from utils.transformer import TransformerClassification
-from sklearn.metrics import roc_auc_score
+from utils.EarlyStopping import EarlyStopping
 
 preprocessing = Preprocessing()
+es = EarlyStopping()
 
 
 def weights_init(m):
@@ -27,7 +28,6 @@ def weights_init(m):
 
 
 def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, device="cpu"):
-
     print("using device: ", device)
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -45,7 +45,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                 net.eval()
 
             epoch_loss = 0.0
-            epoch_corrects = 0
+            epoch_metrics = 0
 
             for batch in (dataloaders_dict[phase]):
                 inputs = batch.Text[0].to(device)
@@ -71,14 +71,16 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                     epoch_loss += loss.item() * inputs.size(0)
                     y_true = labels.data.cpu()
                     preds = preds.cpu()
-                    epoch_corrects += roc_auc_score(y_true, preds)
+                    epoch_metrics += roc_auc_score(y_true, preds)
 
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
-            epoch_acc = epoch_corrects.double(
-            ) / len(dataloaders_dict[phase])
+            epoch_eval = epoch_metrics / len(dataloaders_dict[phase])
+
+            if es.step(epoch_eval):
+                break  # early stop criterion is met, we can stop now
 
             print('Epoch {}/{} | {:^5} |  Loss: {:.4f} ROC_AUC: {:.4f}'.format(epoch + 1, num_epochs,
-                                                                           phase, epoch_loss, epoch_acc))
+                                                                               phase, epoch_loss, epoch_eval))
 
     return net
 
@@ -93,7 +95,7 @@ def main():
     test_file = "test.csv"
     vector_list = "./data/wiki-news-300d-1M.vec"
     max_sequence_length = 900
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
@@ -106,7 +108,8 @@ def main():
 
     for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']:
         net = TransformerClassification(
-            text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=max_sequence_length, output_dim=2, device=device)
+            text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=max_sequence_length, output_dim=2,
+            device=device)
 
         net.train()
 
@@ -142,7 +145,6 @@ def main():
         predicts = []
 
         for batch in (test_dl):
-
             inputs = batch.Text[0].to(device)
 
             with torch.set_grad_enabled(False):

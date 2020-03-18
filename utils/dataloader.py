@@ -54,7 +54,7 @@ class Preprocessing():
                     ('threat', LABEL4), ('insult', LABEL5), ('identity_hate', LABEL6)])
 
         train_ds, val_ds = train_val_ds.split(
-            split_ratio=0.7, random_state=random.seed(1234))
+            split_ratio=0.7, random_state=random.seed(2395))
 
         # torchtextで単語ベクトルとして英語学習済みモデルを読み込みます
         english_fasttext_vectors = Vectors(name=vectors)
@@ -100,7 +100,7 @@ class Preprocessing():
         test = pd.read_csv(os.path.join(path, test_file))
         train = train.drop('id', axis=1)
         test = test.drop('id', axis=1)
-        for label in ["toxic","severe_toxic","obscene","threat","insult","identity_hate"]:
+        for label in ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]:
             test[label] = pd.Series(0, index=test.index)
         temp_path = os.path.join(path, "temp")
         if not os.path.isdir(temp_path):
