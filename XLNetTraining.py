@@ -1,4 +1,6 @@
 # coding: utf-8
+import os
+
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from keras.preprocessing.sequence import pad_sequences
@@ -13,6 +15,10 @@ import io
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime
+
+from utils.EarlyStopping import EarlyStopping
+
+es = EarlyStopping()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -143,7 +149,7 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
     epochs = 4
 
     # trange is a tqdm wrapper around the normal python range
-    for _ in trange(epochs, desc="Epoch"):
+    for ep in trange(epochs, desc="Epoch"):
 
         # Training
 
@@ -211,6 +217,13 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
             eval_accuracy += tmp_eval_accuracy
             nb_eval_steps += 1
 
+        
+        print("Epoch: {}, loss: {}, acc: {}".format(ep, eval_loss, eval_accuracy))
+
+        # option: early stopping
+        # if es.step(eval_accuracy):
+        #     break  # early stop criterion is met, we can stop now
+
     # prediction
     predicts = []
     for batch in test_dataloader:
@@ -231,5 +244,7 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
 
 
 # save output
+if not os.path.exists("./submission"):
+    os.mkdir("./submission")
 now = datetime.datetime.now()
-sample.to_csv("submission_XLNET_{}.csv".format(now.timestamp()), index=False)
+sample.to_csv("submission_XLNET_{}_{}ep.csv".format(now.timestamp(), epochs), index=False)

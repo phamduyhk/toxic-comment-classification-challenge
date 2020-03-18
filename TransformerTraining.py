@@ -10,6 +10,7 @@ from sklearn.metrics import roc_auc_score
 import torchtext
 import pandas as pd
 import datetime
+import os
 
 from utils.dataloader import Preprocessing
 from utils.transformer import TransformerClassification
@@ -162,8 +163,10 @@ def main():
         sample[label] = predicts
 
     # save predictions
-    sample.to_csv("submission_{}.csv".format(
-        datetime.datetime.now().date()), index=False)
+    if not os.path.exists("./submission"):
+        os.mkdir("./submission")
+    sample.to_csv("./submission/submission_Transformer_{}_{}ep.csv".format(
+        datetime.datetime.now().date(), num_epochs), index=False)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 # coding: utf-8
 import json
+import os
 import random
 import time
 import numpy as np
@@ -79,78 +80,85 @@ class BertTraining(nn.Module):
 def main():
     # define output dataframe
     sample = pd.read_csv("./data/sample_submission.csv")
+    # データを読み込んだときに、読み込んだ内容に対して行う処理を定義します
+    max_length = 256
+
+    TEXT = torchtext.data.Field(sequential=True, tokenize=preprocessing.tokenizer_with_preprocessing,
+                                use_vocab=True,
+                                lower=True, include_lengths=True, batch_first=True, fix_length=max_length,
+                                init_token="[CLS]", eos_token="[SEP]", pad_token='[PAD]', unk_token='[UNK]')
+    LABEL1 = torchtext.data.Field(sequential=False, use_vocab=False)
+    LABEL2 = torchtext.data.Field(sequential=False, use_vocab=False)
+    LABEL3 = torchtext.data.Field(sequential=False, use_vocab=False)
+    LABEL4 = torchtext.data.Field(sequential=False, use_vocab=False)
+    LABEL5 = torchtext.data.Field(sequential=False, use_vocab=False)
+    LABEL6 = torchtext.data.Field(sequential=False, use_vocab=False)
+
+    # (注釈)：各引数を再確認
+    # sequential: データの長さが可変か？文章は長さがいろいろなのでTrue.ラベルはFalse
+    # tokenize: 文章を読み込んだときに、前処理や単語分割をするための関数を定義
+    # use_vocab：単語をボキャブラリーに追加するかどうか
+    # lower：アルファベットがあったときに小文字に変換するかどうか
+    # include_length: 文章の単語数のデータを保持するか
+    # batch_first：ミニバッチの次元を先頭に用意するかどうか
+    # fix_length：全部の文章を指定した長さと同じになるように、paddingします
+    # init_token, eos_token, pad_token, unk_token：文頭、文末、padding、未知語に対して、どんな単語を与えるかを指定
+
+    # フォルダ「data」から各tsvファイルを読み込みます
+    # BERT用で処理するので、10分弱時間がかかります
+    train_val_ds, test_ds = torchtext.data.TabularDataset.splits(
+        path='./data/', train='train.csv',
+        test='test.csv', format='csv',
+        fields=[('Text', TEXT), ('toxic', LABEL1), ('severe_toxic', LABEL2), ('obscene', LABEL3),
+                ('threat', LABEL4), ('insult', LABEL5), ('identity_hate', LABEL6)])
+
+    # torchtext.data.Datasetのsplit関数で訓練データとvalidationデータを分ける
+    train_ds, val_ds = train_val_ds.split(
+        split_ratio=0.8, random_state=random.seed(1234))
+
+    # BERTはBERTが持つ全単語でBertEmbeddingモジュールを作成しているので、ボキャブラリーとしては全単語を使用します
+    # そのため訓練データからボキャブラリーは作成しません
+
+    vocab_bert, ids_to_tokens_bert = load_vocab(
+        vocab_file="./weights/bert-base-uncased-vocab.txt")
+
+    # このまま、TEXT.vocab.stoi= vocab_bert (stoiはstring_to_IDで、単語からIDへの辞書)としたいですが、
+    # 一度bulild_vocabを実行しないとTEXTオブジェクトがvocabのメンバ変数をもってくれないです。
+    # （'Field' object has no attribute 'vocab' というエラーをはきます）
+
+    # 1度適当にbuild_vocabでボキャブラリーを作成してから、BERTのボキャブラリーを上書きします
+    TEXT.build_vocab(train_ds, min_freq=1)
+    TEXT.vocab.stoi = vocab_bert
+
+    # DataLoaderを作成します（torchtextの文脈では単純にiteraterと呼ばれています）
+    batch_size = 32  # BERTでは16、32あたりを使用する
+
+    train_dl = torchtext.data.Iterator(
+        train_ds, batch_size=batch_size, train=True)
+
+    val_dl = torchtext.data.Iterator(
+        val_ds, batch_size=batch_size, train=False, sort=False)
+
+    test_dl = torchtext.data.Iterator(
+        test_ds, batch_size=batch_size, train=False, sort=False)
+
+    # 辞書オブジェクトにまとめる
+    dataloaders_dict = {"train": train_dl, "val": val_dl}
+
+    print(vars(train_ds[0]))
+    print(vars(test_ds[0]))
+
+    # モデル設定のJOSNファイルをオブジェクト変数として読み込みます
+    config = get_config(file_path="./weights/bert_config.json")
+
+    # BERTモデルを作成します
+    net_bert = BertModel(config)
+
+    # BERTモデルに学習済みパラメータセットします
+    net_bert = set_learned_params(
+        net_bert, weights_path="./weights/pytorch_model.bin")
 
     for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']:
-
-        # データを読み込んだときに、読み込んだ内容に対して行う処理を定義します
-        max_length = 256
-
-        TEXT = torchtext.data.Field(sequential=True, tokenize=preprocessing.tokenizer_with_preprocessing,
-                                    use_vocab=True,
-                                    lower=True, include_lengths=True, batch_first=True, fix_length=max_length,
-                                    init_token="[CLS]", eos_token="[SEP]", pad_token='[PAD]', unk_token='[UNK]')
-        LABEL = torchtext.data.Field(sequential=False, use_vocab=False)
-
-        # (注釈)：各引数を再確認
-        # sequential: データの長さが可変か？文章は長さがいろいろなのでTrue.ラベルはFalse
-        # tokenize: 文章を読み込んだときに、前処理や単語分割をするための関数を定義
-        # use_vocab：単語をボキャブラリーに追加するかどうか
-        # lower：アルファベットがあったときに小文字に変換するかどうか
-        # include_length: 文章の単語数のデータを保持するか
-        # batch_first：ミニバッチの次元を先頭に用意するかどうか
-        # fix_length：全部の文章を指定した長さと同じになるように、paddingします
-        # init_token, eos_token, pad_token, unk_token：文頭、文末、padding、未知語に対して、どんな単語を与えるかを指定
-
-        # フォルダ「data」から各tsvファイルを読み込みます
-        # BERT用で処理するので、10分弱時間がかかります
-        train_val_ds, test_ds = torchtext.data.TabularDataset.splits(
-            path='./data/', train='train.csv',
-            test='test.csv', format='csv',
-            fields=[('Text', TEXT), ('Label', LABEL)])
-
-        # torchtext.data.Datasetのsplit関数で訓練データとvalidationデータを分ける
-        train_ds, val_ds = train_val_ds.split(
-            split_ratio=0.8, random_state=random.seed(1234))
-
-        # BERTはBERTが持つ全単語でBertEmbeddingモジュールを作成しているので、ボキャブラリーとしては全単語を使用します
-        # そのため訓練データからボキャブラリーは作成しません
-
-        vocab_bert, ids_to_tokens_bert = load_vocab(
-            vocab_file="./vocab/bert-base-uncased-vocab.txt")
-
-        # このまま、TEXT.vocab.stoi= vocab_bert (stoiはstring_to_IDで、単語からIDへの辞書)としたいですが、
-        # 一度bulild_vocabを実行しないとTEXTオブジェクトがvocabのメンバ変数をもってくれないです。
-        # （'Field' object has no attribute 'vocab' というエラーをはきます）
-
-        # 1度適当にbuild_vocabでボキャブラリーを作成してから、BERTのボキャブラリーを上書きします
-        TEXT.build_vocab(train_ds, min_freq=1)
-        TEXT.vocab.stoi = vocab_bert
-
-        # DataLoaderを作成します（torchtextの文脈では単純にiteraterと呼ばれています）
-        batch_size = 32  # BERTでは16、32あたりを使用する
-
-        train_dl = torchtext.data.Iterator(
-            train_ds, batch_size=batch_size, train=True)
-
-        val_dl = torchtext.data.Iterator(
-            val_ds, batch_size=batch_size, train=False, sort=False)
-
-        test_dl = torchtext.data.Iterator(
-            test_ds, batch_size=batch_size, train=False, sort=False)
-
-        # 辞書オブジェクトにまとめる
-        dataloaders_dict = {"train": train_dl, "val": val_dl}
-
-        # モデル設定のJOSNファイルをオブジェクト変数として読み込みます
-        config = get_config(file_path="./weights/bert_config.json")
-
-        # BERTモデルを作成します
-        net_bert = BertModel(config)
-
-        # BERTモデルに学習済みパラメータセットします
-        net_bert = set_learned_params(
-            net_bert, weights_path="./weights/pytorch_model.bin")
-
         # モデル構築
         net = BertTraining(net_bert)
 
@@ -190,7 +198,7 @@ def main():
         # 学習・検証を実行する。1epochに20分ほどかかります
         num_epochs = 2
         net_trained = train_model(net, dataloaders_dict,
-                                  criterion, optimizer, num_epochs=num_epochs, device=device)
+                                  criterion, optimizer, num_epochs=num_epochs, label=label, device=device)
 
         # 学習したネットワークパラメータを保存します
         save_path = './weights/bert_fine_tuning_weights.pth'
@@ -223,11 +231,13 @@ def main():
         sample[label] = predicts
 
     # save predictions
-    sample.to_csv("submission_{}.csv".format(
-        datetime.datetime.now().date()), index=False)
+    if not os.path.exists("./submission"):
+        os.mkdir("./submission")
+    sample.to_csv("./submission/submission_Bert_{}_{}ep.csv".format(
+        datetime.datetime.now().date(), num_epochs), index=False)
 
 
-def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, device):
+def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, device="cpu"):
     # GPUが使えるかを確認
     print("using device：", device)
     print('-----start-------')
@@ -264,7 +274,8 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, device)
 
                 # GPUが使えるならGPUにデータを送る
                 inputs = batch.Text[0].to(device)  # 文章
-                labels = batch.Label.to(device)  # ラベル
+                labels = getattr(batch, label)
+                labels = labels.to(device)
 
                 # optimizerを初期化
                 optimizer.zero_grad()
