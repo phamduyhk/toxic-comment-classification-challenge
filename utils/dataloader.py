@@ -73,11 +73,6 @@ class Preprocessing():
         test_dl = torchtext.data.Iterator(
             test_ds, batch_size=batch_size, train=False, sort=False)
 
-        print("training data length {}".format(len(train_dl)))
-        print("val data length {}".format(len(val_dl)))
-        print("data sample: {}".format(vars(train_ds[0])))
-        print("test sample: {}".format(vars(test_ds[0])))
-
         return train_dl, val_dl, test_dl, TEXT
 
     def reformat_csv_header(self, path, train_file, test_file):

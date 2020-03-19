@@ -12,6 +12,8 @@ import torch.optim as optim
 import torchtext
 import pandas as pd
 import datetime
+import re
+import string
 
 # local import
 from utils.bert import BertModel
@@ -76,6 +78,36 @@ class BertTraining(nn.Module):
         elif attention_show_flg == False:
             return out
 
+ # 単語分割用のTokenizerを用意
+def preprocessing_text(text):
+    # 改行コードを消去
+    text = re.sub('<br />', '', text)
+
+    # カンマ、ピリオド以外の記号をスペースに置換
+    for p in string.punctuation:
+        if (p == ".") or (p == ","):
+            continue
+        else:
+            text = text.replace(p, " ")
+
+    # ピリオドなどの前後にはスペースを入れておく
+    text = text.replace(".", " . ")
+    text = text.replace(",", " , ")
+    return text
+
+
+# 単語分割用のTokenizerを用意
+tokenizer_bert = BertTokenizer(
+    vocab_file="./weights/bert-base-uncased-vocab.txt", do_lower_case=True)
+
+
+# 前処理と単語分割をまとめた関数を定義
+# 単語分割の関数を渡すので、tokenizer_bertではなく、tokenizer_bert.tokenizeを渡す点に注意
+def tokenizer_with_preprocessing(text, tokenizer=tokenizer_bert.tokenize):
+    text = preprocessing_text(text)
+    ret = tokenizer(text)  # tokenizer_bert
+    return ret
+
 
 def main():
     # define output dataframe
@@ -83,10 +115,11 @@ def main():
     # データを読み込んだときに、読み込んだ内容に対して行う処理を定義します
     max_length = 256
 
-    TEXT = torchtext.data.Field(sequential=True, tokenize=preprocessing.tokenizer_with_preprocessing,
+    TEXT = torchtext.data.Field(sequential=True, tokenize=tokenizer_with_preprocessing,
                                 use_vocab=True,
                                 lower=True, include_lengths=True, batch_first=True, fix_length=max_length,
                                 init_token="[CLS]", eos_token="[SEP]", pad_token='[PAD]', unk_token='[UNK]')
+
     LABEL1 = torchtext.data.Field(sequential=False, use_vocab=False)
     LABEL2 = torchtext.data.Field(sequential=False, use_vocab=False)
     LABEL3 = torchtext.data.Field(sequential=False, use_vocab=False)
@@ -106,11 +139,18 @@ def main():
 
     # フォルダ「data」から各tsvファイルを読み込みます
     # BERT用で処理するので、10分弱時間がかかります
+    temp_path = preprocessing.reformat_csv_header(
+            path="./data", train_file="train.csv", test_file="test.csv")
+
+    print("temp path {}".format(temp_path))
+    print("text {}".format(vars(TEXT)))
+            
     train_val_ds, test_ds = torchtext.data.TabularDataset.splits(
-        path='./data/', train='train.csv',
+        path=temp_path, train='train.csv',
         test='test.csv', format='csv',
         fields=[('Text', TEXT), ('toxic', LABEL1), ('severe_toxic', LABEL2), ('obscene', LABEL3),
                 ('threat', LABEL4), ('insult', LABEL5), ('identity_hate', LABEL6)])
+
 
     # torchtext.data.Datasetのsplit関数で訓練データとvalidationデータを分ける
     train_ds, val_ds = train_val_ds.split(
