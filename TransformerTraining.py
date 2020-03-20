@@ -83,7 +83,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
             epoch_eval = epoch_metrics / len(dataloaders_dict[phase])
 
-            if es.step(epoch_eval):
+            if es.step(torch.tensor(epoch_eval)):
                 break  # early stop criterion is met, we can stop now
 
             print('Epoch {}/{} | {:^5} |  Loss: {:.4f} ROC_AUC: {:.4f}'.format(epoch + 1, num_epochs,
