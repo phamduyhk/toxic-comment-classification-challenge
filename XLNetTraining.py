@@ -48,7 +48,7 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
 
 
     # Set the maximum sequence length. The longest sequence in our training set is 47, but we'll leave room on the end anyway.
-    MAX_LEN = 32
+    MAX_LEN = 512
 
     # Use the XLNet tokenizer to convert the tokens to their index numbers in the XLNet vocabulary
     input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
@@ -96,7 +96,7 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
     test_masks = torch.tensor(test_attention_masks)
 
     # Select a batch size for training. For fine-tuning with XLNet, the authors recommend a batch size of 32, 48, or 128. We will use 32 here to avoid memory issues.
-    batch_size = 512
+    batch_size = 32
 
     # Create an iterator of our data with torch DataLoader. This helps save on memory during training because, unlike a for loop,
     # with an iterator the entire dataset does not need to be loaded into memory
@@ -166,6 +166,15 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
             batch = tuple(t.to(device) for t in batch)
             # Unpack the inputs from our dataloader
             b_input_ids, b_input_mask, b_labels = batch
+
+            # b_input_ids = torch.tensor(b_input_ids).to(torch.int64)
+            # b_input_mask  =  torch.tensor(b_input_mask).to(torch.int64)
+            # b_labels =  torch.tensor(b_labels).to(torch.int64)
+
+            b_input_ids = b_input_ids.long()
+            b_input_mask  = b_input_mask.long()
+            b_labels = b_labels.long()
+
             # Clear out the gradients (by default they accumulate)
             optimizer.zero_grad()
             # Forward pass
@@ -229,6 +238,10 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
     for batch in test_dataloader:
         batch = tuple(t.to(device) for t in batch)
         b_input_ids, b_input_mask = batch
+
+        b_input_ids = b_input_ids.long()
+        b_input_mask  = b_input_mask.long()
+      
         # Telling the model not to compute or store gradients, saving memory and speeding up validation
         with torch.no_grad():
             # Forward pass, calculate logit predictions

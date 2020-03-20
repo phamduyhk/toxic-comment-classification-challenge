@@ -5,7 +5,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 import torchtext
 import pandas as pd
@@ -18,6 +18,12 @@ from utils.EarlyStopping import EarlyStopping
 
 preprocessing = Preprocessing()
 es = EarlyStopping()
+
+
+def roc_auc_score_FIXED(y_true, y_pred):
+    if len(np.unique(y_true)) == 1: # bug in roc_auc_score
+        return accuracy_score(y_true, np.rint(y_pred))
+    return roc_auc_score(y_true, y_pred)
 
 
 def weights_init(m):
@@ -72,7 +78,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                     epoch_loss += loss.item() * inputs.size(0)
                     y_true = labels.data.cpu()
                     preds = preds.cpu()
-                    epoch_metrics += roc_auc_score(y_true, preds)
+                    epoch_metrics += roc_auc_score_FIXED(y_true, preds)
 
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
             epoch_eval = epoch_metrics / len(dataloaders_dict[phase])
@@ -86,7 +92,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
     return net
 
 
-def main():
+def main(load_trained=False):
     torch.manual_seed(1234)
     np.random.seed(1234)
     random.seed(1234)
@@ -100,7 +106,7 @@ def main():
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
-                                                             batch_size=512)
+                                                             batch_size=16)
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
@@ -108,7 +114,11 @@ def main():
     sample = pd.read_csv("./data/sample_submission.csv")
 
     for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']:
-        net = TransformerClassification(
+
+        if load_trained is True:
+            net = torch.load("net_trained_{}.weights".format(label), map_location=device)
+        else:
+            net = TransformerClassification(
             text_embedding_vectors=TEXT.vocab.vectors, d_model=300, max_seq_len=max_sequence_length, output_dim=2,
             device=device)
 
@@ -121,7 +131,7 @@ def main():
 
         criterion = nn.CrossEntropyLoss()
 
-        learning_rate = 2e-6
+        learning_rate = 2e-4
         optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
         num_epochs = 50
@@ -170,4 +180,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(load_trained=True)

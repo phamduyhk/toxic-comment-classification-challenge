@@ -4,7 +4,7 @@ import os
 import random
 import time
 import numpy as np
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 from tqdm import tqdm
 import torch
 from torch import nn
@@ -28,6 +28,11 @@ np.random.seed(1234)
 random.seed(1234)
 
 preprocessing = Preprocessing()
+
+def roc_auc_score_FIXED(y_true, y_pred):
+    if len(np.unique(y_true)) == 1: # bug in roc_auc_score
+        return accuracy_score(y_true, np.rint(y_pred))
+    return roc_auc_score(y_true, y_pred)
 
 
 class BertTraining(nn.Module):
@@ -154,7 +159,7 @@ def main():
 
     # torchtext.data.Datasetのsplit関数で訓練データとvalidationデータを分ける
     train_ds, val_ds = train_val_ds.split(
-        split_ratio=0.8, random_state=random.seed(1234))
+        split_ratio=0.8, random_state=random.seed(2395))
 
     # BERTはBERTが持つ全単語でBertEmbeddingモジュールを作成しているので、ボキャブラリーとしては全単語を使用します
     # そのため訓練データからボキャブラリーは作成しません
@@ -171,7 +176,7 @@ def main():
     TEXT.vocab.stoi = vocab_bert
 
     # DataLoaderを作成します（torchtextの文脈では単純にiteraterと呼ばれています）
-    batch_size = 32  # BERTでは16、32あたりを使用する
+    batch_size = 16  # BERTでは16、32あたりを使用する
 
     train_dl = torchtext.data.Iterator(
         train_ds, batch_size=batch_size, train=True)
@@ -350,8 +355,9 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                     # 損失と正解数の合計を更新
                     epoch_loss += loss.item() * batch_size
                     y_true = labels.data.cpu()
+                    y_true = np.array(y_true)
                     preds = preds.cpu()
-                    epoch_metrics += roc_auc_score(y_true, preds)
+                    epoch_metrics += roc_auc_score_FIXED(y_true, preds)
 
             # epochごとのlossと正解率
             t_epoch_finish = time.time()
