@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import os
 import math
@@ -100,7 +102,20 @@ def main():
                                                         device=device
                                                         )
     num_labels = len(label_cols)
+
+    sample = pd.read_csv("./data/sample_submission.csv")
     pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+    predicts = np.round(pred_probs)
+    df = pd.DataFrame(predicts)
+    df.to_csv("dummy_predict_xlnet.csv")
+    predicts = predicts.reshape(shape=(predicts.shape[1], predicts.shape[0]))
+    for index, label in enumerate(label_cols):
+        sample[label] = predicts[index]
+    # save output
+    if not os.path.exists("./submission"):
+        os.mkdir("./submission")
+    now = datetime.datetime.now()
+    sample.to_csv("submission_XLNET_{}_{}ep.csv".format(now.timestamp(), num_epochs), index=False)
 
 
 def y_split(data, label_cols):
