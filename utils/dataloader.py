@@ -9,6 +9,26 @@ import spacy
 import torchtext
 from torchtext.vocab import Vectors
 import pandas as pd
+import torch
+
+
+class BatchWrapper:
+    def __init__(self, dl, x_var, y_vars):
+        self.dl, self.x_var, self.y_vars = dl, x_var, y_vars  # we pass in the list of attributes for x
+
+    def __iter__(self):
+        for batch in self.dl:
+            x = getattr(batch, self.x_var)  # we assume only one input in this wrapper
+
+            if self.y_vars is None:  # we will concatenate y into a single tensor
+                y = torch.cat([getattr(batch, feat).unsqueeze(1) for feat in self.y_vars], dim=1).float()
+            else:
+                y = torch.zeros((1))
+
+            yield (x, y)
+
+    def __len__(self):
+        return len(self.dl)
 
 
 class Preprocessing():
@@ -73,6 +93,14 @@ class Preprocessing():
         test_dl = torchtext.data.Iterator(
             test_ds, batch_size=batch_size, train=False, sort=False)
 
+        train_dl = BatchWrapper(train_dl, "comment_text",
+                                ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"])
+        val_dl = BatchWrapper(val_dl, "comment_text",
+                                ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"])
+        test_dl = BatchWrapper(test_dl, "comment_text", None)
+
+
+
         return train_dl, val_dl, test_dl, TEXT
 
     def reformat_csv_header(self, path, train_file, test_file):
@@ -95,8 +123,8 @@ class Preprocessing():
         test = pd.read_csv(os.path.join(path, test_file))
         train = train.drop('id', axis=1)
         test = test.drop('id', axis=1)
-        for label in ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]:
-            test[label] = pd.Series(0, index=test.index)
+        # for label in ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]:
+        #     test[label] = pd.Series(0, index=test.index)
         temp_path = os.path.join(path, "temp")
         if not os.path.isdir(temp_path):
             os.mkdir(temp_path)
