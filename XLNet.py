@@ -5,6 +5,7 @@ import os
 import math
 
 import torch
+from torch.backends import cudnn
 from torch.nn import BCEWithLogitsLoss
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from transformers import AdamW, XLNetTokenizer, XLNetModel, XLNetLMHeadModel, XLNetConfig
@@ -231,6 +232,9 @@ def train_model(model, num_epochs,
     """
 
     model.to(device)
+
+    model = torch.nn.DataParallel(model)  # make parallel
+    cudnn.benchmark = True
 
     # trange is a tqdm wrapper around the normal python range
     for i in trange(num_epochs, desc="Epoch"):
