@@ -46,21 +46,17 @@ def main():
     # train valid split
     train, valid = train_test_split(train, test_size=0.2, random_state=23)
 
-    X_train = train["features"]
-    X_valid = valid["features"]
+    X_train = train["features"].values.tolist()
+    X_valid = valid["features"].values.tolist()
 
     Y_train = y_split(train, label_cols)
     Y_valid = y_split(valid, label_cols)
 
-    train_masks = train["masks"]
-    valid_masks = valid["masks"]
+    train_masks = train["masks"].values.tolist()
+    valid_masks = valid["masks"].values.tolist()
 
     # Convert all of our input ids and attention masks into
-    # torch tensors, the required datatype for our mode
-
-    print(X_train)
-    print(Y_train)
-
+    # torch tensors, the required datatype
     X_train = torch.tensor(X_train)
     X_valid = torch.tensor(X_valid)
 
@@ -111,7 +107,7 @@ def y_split(data, label_cols):
     for label in label_cols:
         y.append(data[label])
     y = np.array(y)
-    y.reshape(y.shape[1], y.shape[0])
+    y = y.reshape(y.shape[1], y.shape[0])
     return y
 
 
