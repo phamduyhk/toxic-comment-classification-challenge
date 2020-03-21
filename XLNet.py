@@ -21,12 +21,12 @@ def main():
     print("GPU Available: {}".format(torch.cuda.is_available()))
     n_gpu = torch.cuda.device_count()
     print("Number of GPU Available: {}".format(n_gpu))
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
     num_embeddings = 512
     # Select a batch size for training
-    batch_size = 32
+    batch_size = 16
     mode = "train"
 
     train = pd.read_csv("./data/train.csv")
@@ -233,8 +233,8 @@ def train_model(model, num_epochs,
 
     model.to(device)
 
-    model = torch.nn.DataParallel(model)  # make parallel
-    cudnn.benchmark = True
+    # model = torch.nn.DataParallel(model)  # make parallel
+    # cudnn.benchmark = True
 
     # trange is a tqdm wrapper around the normal python range
     for i in trange(num_epochs, desc="Epoch"):
