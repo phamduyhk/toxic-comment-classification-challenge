@@ -19,6 +19,7 @@ def main():
     n_gpu = torch.cuda.device_count()
     print("Number of GPU Available: {}".format(n_gpu))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("using device: {}".format(device))
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
@@ -56,6 +57,9 @@ def main():
 
     # Convert all of our input ids and attention masks into
     # torch tensors, the required datatype for our mode
+
+    print(X_train)
+    print(Y_train)
 
     X_train = torch.tensor(X_train)
     X_valid = torch.tensor(X_valid)
