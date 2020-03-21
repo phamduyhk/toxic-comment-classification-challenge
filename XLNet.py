@@ -23,9 +23,10 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
-    num_embeddings = 60
+    num_embeddings = 128
     # Select a batch size for training
     batch_size = 32
+    mode = "predict"
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
@@ -95,20 +96,26 @@ def main():
     num_epochs = 2
     model_save_path = "xlnet_weights.bin"
 
-    model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
+    if mode is "train":
+        model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
                                                         train_dataloader=train_dataloader,
                                                         valid_dataloader=validation_dataloader,
                                                         model_save_path=model_save_path,
                                                         device=device
                                                         )
+    else:
+        # load model
+        model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+
     num_labels = len(label_cols)
 
     sample = pd.read_csv("./data/sample_submission.csv")
     pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+    print(pred_probs)
     predicts = np.round(pred_probs)
     df = pd.DataFrame(predicts)
-    df.to_csv("dummy_predict_xlnet.csv")
-    predicts = predicts.reshape(shape=(predicts.shape[1], predicts.shape[0]))
+    df.to_csv("dummy_predict_xlnet.csv", index=False)
+    predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
     for index, label in enumerate(label_cols):
         sample[label] = predicts[index]
     # save output
