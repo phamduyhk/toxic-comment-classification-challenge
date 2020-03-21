@@ -23,10 +23,10 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
-    num_embeddings = 128
+    num_embeddings = 512
     # Select a batch size for training
     batch_size = 32
-    mode = "predict"
+    mode = "train"
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
