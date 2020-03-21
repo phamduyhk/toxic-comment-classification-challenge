@@ -21,6 +21,10 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
+    num_embeddings = 60
+    # Select a batch size for training
+    batch_size = 32
+
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
 
@@ -30,8 +34,8 @@ def main():
     train_text_list = train["comment_text"].values
     test_text_list = test["comment_text"].values
 
-    train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=512)
-    test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=512)
+    train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=num_embeddings)
+    test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=num_embeddings)
 
     train_attention_masks = create_attn_masks(train_input_ids)
     test_attention_masks = create_attn_masks(test_input_ids)
@@ -66,9 +70,6 @@ def main():
     train_masks = torch.tensor(train_masks, dtype=torch.long)
     valid_masks = torch.tensor(valid_masks, dtype=torch.long)
 
-    # Select a batch size for training
-    batch_size = 32
-
     # Create an iterator of our data with torch DataLoader. This helps save on
     # memory during training because, unlike a for loop,
     # with an iterator the entire dataset does not need to be loaded into memory
@@ -99,7 +100,7 @@ def main():
                                                         device=device
                                                         )
     num_labels = len(label_cols)
-    pred_probs = generate_predictions(model, test, num_labels, device="cuda", batch_size=32)
+    pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
 
 
 def y_split(data, label_cols):
@@ -280,13 +281,13 @@ def train_model(model, num_epochs,
         if lowest_eval_loss == None:
             lowest_eval_loss = epoch_eval_loss
             # save model
-            save_model(model, model_save_path, actual_epoch, \
+            save_model(model, model_save_path, actual_epoch,
                        lowest_eval_loss, train_loss_set, valid_loss_set)
         else:
             if epoch_eval_loss < lowest_eval_loss:
                 lowest_eval_loss = epoch_eval_loss
                 # save model
-                save_model(model, model_save_path, actual_epoch, \
+                save_model(model, model_save_path, actual_epoch,
                            lowest_eval_loss, train_loss_set, valid_loss_set)
         print("\n")
 
@@ -298,14 +299,14 @@ def save_model(model, save_path, epochs, lowest_eval_loss, train_loss_hist, vali
     Save the model to the path directory provided
     """
     model_to_save = model.module if hasattr(model, 'module') else model
-    checkpoint = {'epochs': epochs, \
-                  'lowest_eval_loss': lowest_eval_loss, \
-                  'state_dict': model_to_save.state_dict(), \
-                  'train_loss_hist': train_loss_hist, \
+    checkpoint = {'epochs': epochs,
+                  'lowest_eval_loss': lowest_eval_loss,
+                  'state_dict': model_to_save.state_dict(),
+                  'train_loss_hist': train_loss_hist,
                   'valid_loss_hist': valid_loss_hist
                   }
     torch.save(checkpoint, save_path)
-    print("Saving model at epoch {} with validation loss of {}".format(epochs, \
+    print("Saving model at epoch {} with validation loss of {}".format(epochs,
                                                                        lowest_eval_loss))
     return
 
