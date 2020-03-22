@@ -1,4 +1,7 @@
 # coding: utf-8
+from EarlyStopping import EarlyStopping
+from transformer import TransformerClassification
+from dataloader import Preprocessing
 import numpy as np
 import random
 
@@ -11,10 +14,10 @@ import torchtext
 import pandas as pd
 import datetime
 import os
+import sys
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), './utils')))
 
-from utils.dataloader import Preprocessing
-from utils.transformer import TransformerClassification
-from utils.EarlyStopping import EarlyStopping
 
 preprocessing = Preprocessing()
 es = EarlyStopping()
@@ -30,7 +33,7 @@ def main(load_trained=False):
     test_file = "test.csv"
     vector_list = "./data/wiki-news-300d-1M.vec"
     max_sequence_length = 900
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
@@ -115,7 +118,6 @@ def roc_auc_score_FIXED(y_true, y_pred):
     except ValueError:
         score = accuracy_score(y_true, np.rint(y_pred))
     return score
-        
 
 
 def weights_init(m):
