@@ -163,6 +163,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
 
                     preds = (outputs > 0.5) * 1
 
+                    # training mode
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
@@ -171,7 +172,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
                     epoch_loss += loss.item() * inputs.size(0)
                     y_true = y_true.data.cpu()
                     preds = preds.cpu()
-                    print("y_true {}, y_pred {}".format(y_true, preds))
+                    # print("y_true {}, y_pred {}".format(y_true, preds))
                     epoch_metrics += roc_auc_score_FIXED(y_true, preds)
 
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
