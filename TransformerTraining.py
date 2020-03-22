@@ -72,10 +72,10 @@ def main(load_trained=False):
     """or"""
     #criterion = nn.MultiLabelSoftMarginLoss()
 
-    learning_rate = 2e-4
+    learning_rate = 2e-5
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
-    num_epochs = 100
+    num_epochs = 50
     net_trained = train_model(net, dataloaders_dict,
                               criterion, optimizer, num_epochs=num_epochs, label_cols=label_cols, device=device)
 
@@ -95,7 +95,7 @@ def main(load_trained=False):
             input_mask = (inputs != input_pad)
 
             outputs, _, _ = net_trained(inputs, input_mask)
-            preds = (outputs > 0.5) * 1
+            preds = (outputs.sigmoid() > 0.5) * 1
             pred_probs = np.vstack([pred_probs, preds])
 
     print(pred_probs)
@@ -164,7 +164,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
                     outputs, _, _ = net(inputs, input_mask)
                     loss = criterion(outputs, y_true)
 
-                    preds = (outputs > 0.5) * 1
+                    preds = (outputs.sigmoid() > 0.5) * 1
 
                     # training mode
                     if phase == 'train':

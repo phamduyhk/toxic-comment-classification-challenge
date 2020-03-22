@@ -94,8 +94,9 @@ def main():
 
     optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
-    num_epochs = 2
+    num_epochs = 4
     model_save_path = "xlnet_weights.bin"
+
 
     if mode is "train":
         model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,

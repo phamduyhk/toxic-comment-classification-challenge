@@ -164,8 +164,11 @@ class ClassificationHead(nn.Module):
 
     def forward(self, x):
         x0 = x[:, 0, :]  # 各ミニバッチの各文の先頭の単語の特徴量（300次元）を取り出す
+        # output as 6-dims vector
         out = self.linear(x0)
-        out = self.sigmoid(out)
+
+        # ADD SIGMOID FUNC
+        # out = self.sigmoid(out)
 
         return out
 
