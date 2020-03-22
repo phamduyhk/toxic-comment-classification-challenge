@@ -24,10 +24,10 @@ def main():
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
-    num_embeddings = 512
+    num_embeddings = 256
     # Select a batch size for training
     batch_size = 16
-    mode = "train"
+    mode = "predict"
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
@@ -113,9 +113,10 @@ def main():
     sample = pd.read_csv("./data/sample_submission.csv")
     pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
     print(pred_probs)
-    predicts = np.round(pred_probs)
-    df = pd.DataFrame(predicts)
-    df.to_csv("dummy_predict_xlnet.csv", index=False)
+    predicts = (pred_probs>0.5) *1 
+    print(predicts)
+    df = pd.DataFrame(pred_probs)
+    df.to_csv("pred_probs_predict_xlnet.csv", index=False)
     predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
     for index, label in enumerate(label_cols):
         sample[label] = predicts[index]
