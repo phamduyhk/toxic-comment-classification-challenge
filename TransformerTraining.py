@@ -1,7 +1,4 @@
 # coding: utf-8
-from EarlyStopping import EarlyStopping
-from transformer import TransformerClassification
-from dataloader import Preprocessing
 import numpy as np
 import random
 
@@ -17,6 +14,10 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), './utils')))
+
+from EarlyStopping import EarlyStopping
+from transformer import TransformerClassification
+from dataloader import Preprocessing
 
 
 preprocessing = Preprocessing()
