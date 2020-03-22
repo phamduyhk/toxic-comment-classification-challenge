@@ -38,7 +38,7 @@ def main(load_trained=False):
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
-                                                             batch_size=256)
+                                                             batch_size=128)
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
