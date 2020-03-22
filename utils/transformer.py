@@ -155,6 +155,8 @@ class ClassificationHead(nn.Module):
 
         # 全結合層
         self.linear = nn.Linear(d_model, output_dim)  # output_dimはポジ・ネガの2つ
+        self.softmax = nn.Softmax(dim=1)
+        self.sigmoid = nn.Sigmoid()
 
         # 重み初期化処理
         nn.init.normal_(self.linear.weight, std=0.02)
@@ -163,6 +165,7 @@ class ClassificationHead(nn.Module):
     def forward(self, x):
         x0 = x[:, 0, :]  # 各ミニバッチの各文の先頭の単語の特徴量（300次元）を取り出す
         out = self.linear(x0)
+        out = self.sigmoid(out)
 
         return out
 

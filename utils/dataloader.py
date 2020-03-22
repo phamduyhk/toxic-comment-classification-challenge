@@ -12,25 +12,6 @@ import pandas as pd
 import torch
 
 
-class BatchWrapper:
-    def __init__(self, dl, x_var, y_vars):
-        self.dl, self.x_var, self.y_vars = dl, x_var, y_vars  # we pass in the list of attributes for x
-
-    def __iter__(self):
-        for batch in self.dl:
-            x = getattr(batch, self.x_var)  # we assume only one input in this wrapper
-
-            if self.y_vars is None:  # we will concatenate y into a single tensor
-                y = torch.cat([getattr(batch, feat).unsqueeze(1) for feat in self.y_vars], dim=1).float()
-            else:
-                y = torch.zeros((1))
-
-            yield (x, y)
-
-    def __len__(self):
-        return len(self.dl)
-
-
 class Preprocessing():
     def __init__(self):
         pass
@@ -57,12 +38,7 @@ class Preprocessing():
         TEXT = torchtext.data.Field(sequential=True, tokenize=self.tokenizer_with_preprocessing, use_vocab=True,
                                     lower=True, include_lengths=True, batch_first=True, fix_length=max_length,
                                     init_token="<cls>", eos_token="<eos>")
-        LABEL1 = torchtext.data.Field(sequential=False, use_vocab=False)
-        LABEL2 = torchtext.data.Field(sequential=False, use_vocab=False)
-        LABEL3 = torchtext.data.Field(sequential=False, use_vocab=False)
-        LABEL4 = torchtext.data.Field(sequential=False, use_vocab=False)
-        LABEL5 = torchtext.data.Field(sequential=False, use_vocab=False)
-        LABEL6 = torchtext.data.Field(sequential=False, use_vocab=False)
+        LABEL = torchtext.data.Field(sequential=False, use_vocab=False)
 
         temp_path = self.reformat_csv_header(
             path=path, train_file=train_file, test_file=test_file)
@@ -70,8 +46,8 @@ class Preprocessing():
         train_val_ds, test_ds = torchtext.data.TabularDataset.splits(
             path=temp_path, train=train_file,
             test=test_file, format='csv',
-            fields=[('Text', TEXT), ('toxic', LABEL1), ('severe_toxic', LABEL2), ('obscene', LABEL3),
-                    ('threat', LABEL4), ('insult', LABEL5), ('identity_hate', LABEL6)])
+            fields=[('Text', TEXT), ('toxic', LABEL), ('severe_toxic', LABEL), ('obscene', LABEL),
+                    ('threat', LABEL), ('insult', LABEL), ('identity_hate', LABEL)])
 
         train_ds, val_ds = train_val_ds.split(
             split_ratio=0.7, random_state=random.seed(2395))
@@ -92,14 +68,6 @@ class Preprocessing():
 
         test_dl = torchtext.data.Iterator(
             test_ds, batch_size=batch_size, train=False, sort=False)
-
-        train_dl = BatchWrapper(train_dl, "comment_text",
-                                ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"])
-        val_dl = BatchWrapper(val_dl, "comment_text",
-                                ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"])
-        test_dl = BatchWrapper(test_dl, "comment_text", None)
-
-
 
         return train_dl, val_dl, test_dl, TEXT
 
