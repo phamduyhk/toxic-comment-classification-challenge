@@ -21,7 +21,7 @@ from dataloader import Preprocessing
 
 
 preprocessing = Preprocessing()
-es = EarlyStopping()
+es = EarlyStopping(patience=20)
 
 
 def main(load_trained=False):
