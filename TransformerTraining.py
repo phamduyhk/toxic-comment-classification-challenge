@@ -72,7 +72,7 @@ def main(load_trained=False):
     """or"""
     #criterion = nn.MultiLabelSoftMarginLoss()
 
-    learning_rate = 2e-5
+    learning_rate = 2e-3
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
     num_epochs = 50
@@ -182,7 +182,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
             epoch_eval = epoch_metrics / len(dataloaders_dict[phase])
 
             if es.step(torch.tensor(epoch_eval)):
-                print("Early stop")
+                print("Early stoped at epoch: {}".format(num_epochs))
                 break  # early stop criterion is met, we can stop now
 
             print('Epoch {}/{} | {:^5} |  Loss: {:.4f} ROC_AUC: {:.4f}'.format(epoch + 1, num_epochs,
