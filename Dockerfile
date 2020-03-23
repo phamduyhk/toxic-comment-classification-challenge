@@ -23,7 +23,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 WORKDIR /usr/
 RUN wget https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
 RUN wget https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt
-RUN https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz
+RUN wget https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz
 RUN unzip wiki-news-300d-1M.vec.zip
 RUN rm -rf wiki-news-300d-1M.vec.zip
 RUN unzip bert-base-uncased.tar.gz
