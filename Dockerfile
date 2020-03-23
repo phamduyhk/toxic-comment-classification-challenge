@@ -26,6 +26,4 @@ RUN wget https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-v
 RUN wget https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz
 RUN unzip wiki-news-300d-1M.vec.zip
 RUN rm -rf wiki-news-300d-1M.vec.zip
-RUN unzip bert-base-uncased.tar.gz
-RUN rm-rf bert-base-uncased.tar.gz
 WORKDIR /usr/src/
