@@ -20,7 +20,7 @@ from utils.EarlyStopping import EarlyStopping
 
 es = EarlyStopping()
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 print("device: {}".format(device))
 
@@ -121,7 +121,7 @@ for label in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_
 
     model = XLNetForSequenceClassification.from_pretrained(
         "xlnet-base-cased", num_labels=2)
-    model.cuda()
+    model.to(device)
 
     param_optimizer = list(model.named_parameters())
     no_decay = ['bias', 'gamma', 'beta']

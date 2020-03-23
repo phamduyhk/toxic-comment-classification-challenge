@@ -21,13 +21,17 @@ def main():
     print("GPU Available: {}".format(torch.cuda.is_available()))
     n_gpu = torch.cuda.device_count()
     print("Number of GPU Available: {}".format(n_gpu))
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
-    num_embeddings = 256
+    num_embeddings = 512
     # Select a batch size for training
-    batch_size = 16
-    mode = "predict"
+    batch_size = 32
+    """
+    mode: train
+      or  predict
+    """
+    mode = "train"
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
