@@ -91,8 +91,8 @@ class Preprocessing():
         test = pd.read_csv(os.path.join(path, test_file))
         train = train.drop('id', axis=1)
         test = test.drop('id', axis=1)
-        # for label in ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]:
-        #     test[label] = pd.Series(0, index=test.index)
+        for label in ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]:
+            test[label] = pd.Series(0, index=test.index)
         temp_path = os.path.join(path, "temp")
         if not os.path.isdir(temp_path):
             os.mkdir(temp_path)
