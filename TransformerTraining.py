@@ -24,7 +24,7 @@ preprocessing = Preprocessing()
 es = EarlyStopping(patience=10)
 
 
-def main(train_mode, load_trained=False, early_stop=False):
+def main(train_mode, load_trained=False, early_stop=True):
     torch.manual_seed(1234)
     np.random.seed(1234)
     random.seed(1234)
@@ -33,12 +33,12 @@ def main(train_mode, load_trained=False, early_stop=False):
     train_file = "train.csv"
     test_file = "test.csv"
     vector_list = "./data/wiki-news-300d-1M.vec"
-    max_sequence_length = 900
+    max_sequence_length = 512
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
-                                                             batch_size=512)
+                                                             batch_size=1024)
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
@@ -67,14 +67,14 @@ def main(train_mode, load_trained=False, early_stop=False):
     print('done setup network')
 
     print("running mode: {}".format("training" if train_mode else "predict"))
-    
+
     # Define loss function
     criterion = nn.BCEWithLogitsLoss()
 
     """or"""
     #criterion = nn.MultiLabelSoftMarginLoss()
 
-    learning_rate = 2e-5
+    learning_rate = 3e-5
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
     num_epochs = 50
@@ -108,8 +108,6 @@ def main(train_mode, load_trained=False, early_stop=False):
 
     print(pred_probs)
     predicts = np.round(pred_probs)
-    df = pd.DataFrame(predicts)
-    df.to_csv("dummy_predict_transformer.csv", index=False)
     predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
     for index, label in enumerate(label_cols):
         sample[label] = predicts[index]
@@ -139,6 +137,7 @@ def weights_init(m):
 
 def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_cols, device="cpu", early_stop=False):
     print("using device: ", device)
+
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")
     #     net = nn.DataParallel(net)
