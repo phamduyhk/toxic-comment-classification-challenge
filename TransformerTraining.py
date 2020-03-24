@@ -67,18 +67,19 @@ def main(train_mode, load_trained=False, early_stop=False):
     print('done setup network')
 
     print("running mode: {}".format("training" if train_mode else "predict"))
+    
+    # Define loss function
+    criterion = nn.BCEWithLogitsLoss()
+
+    """or"""
+    #criterion = nn.MultiLabelSoftMarginLoss()
+
+    learning_rate = 2e-5
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+
+    num_epochs = 50
 
     if train_mode:
-        # Define loss function
-        criterion = nn.BCEWithLogitsLoss()
-
-        """or"""
-        #criterion = nn.MultiLabelSoftMarginLoss()
-
-        learning_rate = 2e-5
-        optimizer = optim.Adam(net.parameters(), lr=learning_rate)
-
-        num_epochs = 50
         net_trained = train_model(net, dataloaders_dict,
                                   criterion, optimizer, num_epochs=num_epochs, label_cols=label_cols, device=device, early_stop=early_stop)
 
