@@ -15,16 +15,16 @@ import sys
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), './utils')))
 
-from EarlyStopping import EarlyStopping
-from transformer import TransformerClassification
 from dataloader import Preprocessing
+from transformer import TransformerClassification
+from EarlyStopping import EarlyStopping
 
 
 preprocessing = Preprocessing()
 es = EarlyStopping(patience=20)
 
 
-def main(load_trained=False):
+def main(train_mode, load_trained=True):
     torch.manual_seed(1234)
     np.random.seed(1234)
     random.seed(1234)
@@ -66,21 +66,27 @@ def main(load_trained=False):
 
     print('done setup network')
 
-    # Define loss function
-    criterion = nn.BCEWithLogitsLoss()
+    print("running mode: {}".format("training" if train_mode else "predict"))
 
-    """or"""
-    #criterion = nn.MultiLabelSoftMarginLoss()
+    if train_mode:
+        # Define loss function
+        criterion = nn.BCEWithLogitsLoss()
 
-    learning_rate = 2e-3
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+        """or"""
+        #criterion = nn.MultiLabelSoftMarginLoss()
 
-    num_epochs = 50
-    net_trained = train_model(net, dataloaders_dict,
-                              criterion, optimizer, num_epochs=num_epochs, label_cols=label_cols, device=device)
+        learning_rate = 2e-3
+        optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
-    # net_trainedを保存
-    torch.save(net_trained, "net_trained_transformer.weights")
+        num_epochs = 50
+        net_trained = train_model(net, dataloaders_dict,
+                                criterion, optimizer, num_epochs=num_epochs, label_cols=label_cols, device=device)
+
+        # net_trainedを保存
+        torch.save(net_trained, "net_trained_transformer.weights")
+
+    else:
+        net_trained = net
 
     net_trained.eval()
     net_trained.to(device)
@@ -182,9 +188,8 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
             epoch_eval = epoch_metrics / len(dataloaders_dict[phase])
 
-
             print('Epoch {}/{} | {:^5} |  Loss: {:.4f} ROC_AUC: {:.4f}'.format(epoch + 1, num_epochs,
-                                                                            phase, epoch_loss, epoch_eval))
+                                                                               phase, epoch_loss, epoch_eval))
 
         if es.step(torch.tensor(epoch_eval)):
             print("Early stoped at epoch: {}".format(num_epochs))
@@ -194,4 +199,4 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
 
 
 if __name__ == '__main__':
-    main(load_trained=True)
+    main(train_mode=False)
