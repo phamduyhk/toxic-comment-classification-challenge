@@ -96,6 +96,7 @@ def main(load_trained=False):
 
             outputs, _, _ = net_trained(inputs, input_mask)
             preds = (outputs.sigmoid() > 0.5) * 1
+            preds = preds.cpu()
             pred_probs = np.vstack([pred_probs, preds])
 
     print(pred_probs)
@@ -181,15 +182,16 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
             epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
             epoch_eval = epoch_metrics / len(dataloaders_dict[phase])
 
-            if es.step(torch.tensor(epoch_eval)):
-                print("Early stoped at epoch: {}".format(num_epochs))
-                break  # early stop criterion is met, we can stop now
 
             print('Epoch {}/{} | {:^5} |  Loss: {:.4f} ROC_AUC: {:.4f}'.format(epoch + 1, num_epochs,
-                                                                               phase, epoch_loss, epoch_eval))
+                                                                            phase, epoch_loss, epoch_eval))
+
+        if es.step(torch.tensor(epoch_eval)):
+            print("Early stoped at epoch: {}".format(num_epochs))
+            break  # early stop criterion is met, we can stop now
 
     return net
 
 
 if __name__ == '__main__':
-    main(load_trained=False)
+    main(load_trained=True)
