@@ -1,4 +1,7 @@
 # coding: utf-8
+from EarlyStopping import EarlyStopping
+from transformer import TransformerClassification
+from dataloader import Preprocessing
 import numpy as np
 import random
 
@@ -15,16 +18,12 @@ import sys
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), './utils')))
 
-from dataloader import Preprocessing
-from transformer import TransformerClassification
-from EarlyStopping import EarlyStopping
-
 
 preprocessing = Preprocessing()
-es = EarlyStopping(patience=20)
+es = EarlyStopping(patience=10)
 
 
-def main(train_mode, load_trained=True):
+def main(train_mode, load_trained=False, early_stop=False):
     torch.manual_seed(1234)
     np.random.seed(1234)
     random.seed(1234)
@@ -34,11 +33,11 @@ def main(train_mode, load_trained=True):
     test_file = "test.csv"
     vector_list = "./data/wiki-news-300d-1M.vec"
     max_sequence_length = 900
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
-                                                             batch_size=128)
+                                                             batch_size=512)
 
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
@@ -75,12 +74,12 @@ def main(train_mode, load_trained=True):
         """or"""
         #criterion = nn.MultiLabelSoftMarginLoss()
 
-        learning_rate = 2e-3
+        learning_rate = 2e-5
         optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
         num_epochs = 50
         net_trained = train_model(net, dataloaders_dict,
-                                criterion, optimizer, num_epochs=num_epochs, label_cols=label_cols, device=device)
+                                  criterion, optimizer, num_epochs=num_epochs, label_cols=label_cols, device=device, early_stop=early_stop)
 
         # net_trainedを保存
         torch.save(net_trained, "net_trained_transformer.weights")
@@ -136,7 +135,7 @@ def weights_init(m):
             nn.init.constant_(m.bias, 0.0)
 
 
-def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_cols, device="cpu"):
+def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_cols, device="cpu", early_stop=False):
     print("using device: ", device)
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -191,12 +190,13 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
             print('Epoch {}/{} | {:^5} |  Loss: {:.4f} ROC_AUC: {:.4f}'.format(epoch + 1, num_epochs,
                                                                                phase, epoch_loss, epoch_eval))
 
-        if es.step(torch.tensor(epoch_eval)):
-            print("Early stoped at epoch: {}".format(num_epochs))
-            break  # early stop criterion is met, we can stop now
+        if early_stop:
+            if es.step(torch.tensor(epoch_eval)):
+                print("Early stoped at epoch: {}".format(num_epochs))
+                break  # early stop criterion is met, we can stop now
 
     return net
 
 
 if __name__ == '__main__':
-    main(train_mode=False)
+    main(train_mode=True)
