@@ -96,6 +96,9 @@ def main():
 
     model = XLNetForMultiLabelSequenceClassification(num_labels=len(Y_train[0]))
 
+    # Freeze pretrained xlnet parameters
+    model.freeze_xlnet_decoder()
+
     optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
     num_epochs = 4
@@ -183,6 +186,7 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         self.classifier = torch.nn.Linear(768, num_labels)
 
         torch.nn.init.xavier_normal_(self.classifier.weight)
+
 
     def forward(self, input_ids, token_type_ids=None,
                 attention_mask=None, labels=None):
