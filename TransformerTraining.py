@@ -71,10 +71,10 @@ def main(train_mode, load_trained=False, early_stop=True):
 
     # Define loss function
     # criterion = nn.BCEWithLogitsLoss()
-    criterion = nn.BCELoss()
+    # criterion = nn.BCELoss()
 
     """or"""
-    #criterion = nn.MultiLabelSoftMarginLoss()
+    criterion = nn.MultiLabelSoftMarginLoss()
 
     learning_rate = 3e-5
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
@@ -171,8 +171,8 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
                     input_mask = (inputs != input_pad)
 
                     outputs, _, _ = net(inputs, input_mask)
-                    loss = criterion(sigmoid(outputs), y_true)
-
+                    # loss = criterion(sigmoid(outputs), y_true)
+                    loss = criterion(outputs, y_true)
                     preds = (outputs.sigmoid() > 0.5) * 1
 
                     # training mode
