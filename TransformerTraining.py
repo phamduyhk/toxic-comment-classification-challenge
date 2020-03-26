@@ -25,7 +25,7 @@ es = EarlyStopping(patience=10)
 sigmoid = nn.Sigmoid()
 
 
-def main(train_mode, load_trained=False, early_stop=True):
+def main(train_mode, load_trained=False, early_stop=False):
     torch.manual_seed(1234)
     np.random.seed(1234)
     random.seed(1234)
@@ -95,6 +95,7 @@ def main(train_mode, load_trained=False, early_stop=True):
     net_trained.to(device)
 
     pred_probs = np.array([]).reshape(0, num_labels)
+    raw_pred = np.array([]).reshape(0, num_labels)
 
     for batch in (test_dl):
         inputs = batch.Text[0].to(device)
@@ -104,10 +105,15 @@ def main(train_mode, load_trained=False, early_stop=True):
             input_mask = (inputs != input_pad)
 
             outputs, _, _ = net_trained(inputs, input_mask)
+            raw_output = outputs.cpu()
+            raw_pred = np.vstack([raw_pred, raw_output])
             preds = (outputs.sigmoid() > 0.5) * 1
             preds = preds.cpu()
             pred_probs = np.vstack([pred_probs, preds])
-
+    print(raw_pred)
+    df = pd.DataFrame()
+    df['raw_pred'] = raw_pred
+    df.to_csv("transformer_raw_pred.csv",index=False)
     print(pred_probs)
     predicts = np.round(pred_probs)
     predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
