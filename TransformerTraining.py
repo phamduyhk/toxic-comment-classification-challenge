@@ -69,7 +69,8 @@ def main(train_mode, load_trained=False, early_stop=True):
     print("running mode: {}".format("training" if train_mode else "predict"))
 
     # Define loss function
-    criterion = nn.BCEWithLogitsLoss()
+    # criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCELoss()
 
     """or"""
     #criterion = nn.MultiLabelSoftMarginLoss()
