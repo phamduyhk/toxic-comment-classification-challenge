@@ -17,6 +17,10 @@ from tqdm import tqdm, trange
 import matplotlib.pyplot as plt
 
 
+sigmoid = torch.nn.Sigmoid()
+
+
+
 def main():
     print("GPU Available: {}".format(torch.cuda.is_available()))
     n_gpu = torch.cuda.device_count()
@@ -201,7 +205,7 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         if labels is not None:
             # loss_fct = BCEWithLogitsLoss()
             loss_fct = BCELoss()
-            loss = loss_fct(logits.view(-1, self.num_labels),
+            loss = loss_fct(sigmoid(logits.view(-1, self.num_labels)),
                             labels.view(-1, self.num_labels))
             return loss
         else:
