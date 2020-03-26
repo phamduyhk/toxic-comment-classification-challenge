@@ -22,6 +22,7 @@ from dataloader import Preprocessing
 
 preprocessing = Preprocessing()
 es = EarlyStopping(patience=10)
+sigmoid = nn.Sigmoid()
 
 
 def main(train_mode, load_trained=False, early_stop=True):
@@ -170,7 +171,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
                     input_mask = (inputs != input_pad)
 
                     outputs, _, _ = net(inputs, input_mask)
-                    loss = criterion(nn.Sigmoid(outputs), y_true)
+                    loss = criterion(sigmoid(outputs), y_true)
 
                     preds = (outputs.sigmoid() > 0.5) * 1
 
