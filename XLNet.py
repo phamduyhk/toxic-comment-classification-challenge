@@ -6,7 +6,7 @@ import math
 
 import torch
 from torch.backends import cudnn
-from torch.nn import BCEWithLogitsLoss, BCELoss
+from torch.nn import BCEWithLogitsLoss, BCELoss, MultiLabelSoftMarginLoss
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from transformers import AdamW, XLNetTokenizer, XLNetModel, XLNetLMHeadModel, XLNetConfig
 from keras.preprocessing.sequence import pad_sequences
@@ -204,8 +204,9 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
 
         if labels is not None:
             # loss_fct = BCEWithLogitsLoss()
-            loss_fct = BCELoss()
-            loss = loss_fct(sigmoid(logits.view(-1, self.num_labels)),
+            # loss_fct = BCELoss()
+            loss_fct = MultiLabelSoftMarginLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels),
                             labels.view(-1, self.num_labels))
             return loss
         else:
