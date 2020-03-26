@@ -170,7 +170,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
                     input_mask = (inputs != input_pad)
 
                     outputs, _, _ = net(inputs, input_mask)
-                    loss = criterion(outputs, y_true)
+                    loss = criterion(nn.Sigmoid(outputs), y_true)
 
                     preds = (outputs.sigmoid() > 0.5) * 1
 
