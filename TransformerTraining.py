@@ -112,10 +112,12 @@ def main(train_mode, load_trained=False, early_stop=False):
             pred_probs = np.vstack([pred_probs, preds])
     print(raw_pred)
     df = pd.DataFrame()
-    df['raw_pred'] = raw_pred
+    raw_pred = raw_pred.reshape(raw_pred.shape[1], raw_pred.shape[0])
+    for index, label in enumerate(label_cols):
+        df[label] = raw_pred[index]
     df.to_csv("transformer_raw_pred.csv",index=False)
     print(pred_probs)
-    predicts = np.round(pred_probs)
+    # predicts = np.round(pred_probs)
     predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
     for index, label in enumerate(label_cols):
         sample[label] = predicts[index]
