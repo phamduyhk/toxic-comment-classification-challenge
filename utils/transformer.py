@@ -168,7 +168,7 @@ class ClassificationHead(nn.Module):
         out = self.linear(x0)
 
         # ADD SIGMOID FUNC
-        # out = self.sigmoid(out)
+        out = self.sigmoid(out)
 
         return out
 
