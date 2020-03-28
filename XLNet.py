@@ -146,7 +146,7 @@ def y_split(data, label):
     y = []
     y.append(data[label])
     y = np.array(y)
-    y = y.reshape(y.shape[1], y.shape[0])
+    y = y.reshape(y.shape[0], 1)
     return y
 
 
