@@ -203,7 +203,6 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         # pool the outputs into a mean vector
         mean_last_hidden_state = self.pool_hidden_state(last_hidden_state)
         logits = self.classifier(mean_last_hidden_state)
-        logits = sigmoid(logits)
 
         if labels is not None:
             loss_fct = BCEWithLogitsLoss()
