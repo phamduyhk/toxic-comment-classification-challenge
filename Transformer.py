@@ -170,7 +170,8 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                         optimizer.step()
 
                     preds = preds.cpu()
-                    epoch_metrics += roc_auc_score_FIXED(labels, preds)
+                    y_true = labels.cpu()
+                    epoch_metrics += roc_auc_score_FIXED(y_true, preds)
                     epoch_loss += loss.item() * inputs.size(0)
             
 
