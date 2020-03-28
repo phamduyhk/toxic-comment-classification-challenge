@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 sigmoid = torch.nn.Sigmoid()
 
 
+
 def main():
     print("GPU Available: {}".format(torch.cuda.is_available()))
     n_gpu = torch.cuda.device_count()
@@ -31,110 +32,106 @@ def main():
     # Select a batch size for training
     batch_size = 32
     """
-    train_mode: True  ==> training
-      or        False ==> predict
+    mode: train
+      or  predict
     """
-    train_mode = True
+    mode = "train"
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
 
     label_cols = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
+    tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
+    train_text_list = train["comment_text"].values
+    test_text_list = test["comment_text"].values
+
+    train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=num_embeddings)
+    test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=num_embeddings)
+
+    train_attention_masks = create_attn_masks(train_input_ids)
+    test_attention_masks = create_attn_masks(test_input_ids)
+
+    # add input ids and attention masks to the dataframe
+    train["features"] = train_input_ids.tolist()
+    train["masks"] = train_attention_masks
+
+    test["features"] = test_input_ids.tolist()
+    test["masks"] = test_attention_masks
+
+    # train valid split
+    train, valid = train_test_split(train, test_size=0.2, random_state=23)
+
+    X_train = train["features"].values.tolist()
+    X_valid = valid["features"].values.tolist()
+
+    Y_train = y_split(train, label_cols)
+    Y_valid = y_split(valid, label_cols)
+
+    train_masks = train["masks"].values.tolist()
+    valid_masks = valid["masks"].values.tolist()
+
+    # Convert all of our input ids and attention masks into
+    # torch tensors, the required datatype
+    X_train = torch.tensor(X_train)
+    X_valid = torch.tensor(X_valid)
+
+    Y_train = torch.tensor(Y_train, dtype=torch.float32)
+    Y_valid = torch.tensor(Y_valid, dtype=torch.float32)
+
+    train_masks = torch.tensor(train_masks, dtype=torch.long)
+    valid_masks = torch.tensor(valid_masks, dtype=torch.long)
+
+    # Create an iterator of our data with torch DataLoader. This helps save on
+    # memory during training because, unlike a for loop,
+    # with an iterator the entire dataset does not need to be loaded into memory
+
+    train_data = TensorDataset(X_train, train_masks, Y_train)
+    train_sampler = RandomSampler(train_data)
+    train_dataloader = DataLoader(train_data,
+                                  sampler=train_sampler,
+                                  batch_size=batch_size)
+
+    validation_data = TensorDataset(X_valid, valid_masks, Y_valid)
+    validation_sampler = SequentialSampler(validation_data)
+    validation_dataloader = DataLoader(validation_data,
+                                       sampler=validation_sampler,
+                                       batch_size=batch_size)
+
+    model = XLNetForMultiLabelSequenceClassification(num_labels=len(Y_train[0]))
+
+    # Freeze pretrained xlnet parameters
+    model.freeze_xlnet_decoder()
+
+    optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
+
+    num_epochs = 4
+    model_save_path = "xlnet_weights.bin"
+
+
+    if mode is "train":
+        model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
+                                                        train_dataloader=train_dataloader,
+                                                        valid_dataloader=validation_dataloader,
+                                                        model_save_path=model_save_path,
+                                                        device=device
+                                                        )
+    else:
+        # load model
+        model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+
+    num_labels = len(label_cols)
+
     sample = pd.read_csv("./data/sample_submission.csv")
-
-    for label in label_cols:
-
-        tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
-        train_text_list = train["comment_text"].values
-        test_text_list = test["comment_text"].values
-
-        train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=num_embeddings)
-        test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=num_embeddings)
-
-        train_attention_masks = create_attn_masks(train_input_ids)
-        test_attention_masks = create_attn_masks(test_input_ids)
-
-        # add input ids and attention masks to the dataframe
-        train["features"] = train_input_ids.tolist()
-        train["masks"] = train_attention_masks
-
-        test["features"] = test_input_ids.tolist()
-        test["masks"] = test_attention_masks
-
-        # train valid split
-        train, valid = train_test_split(train, test_size=0.2, random_state=23)
-
-        X_train = train["features"].values.tolist()
-        X_valid = valid["features"].values.tolist()
-
-        Y_train = y_split(train, label)
-        Y_valid = y_split(valid, label)
-
-        train_masks = train["masks"].values.tolist()
-        valid_masks = valid["masks"].values.tolist()
-
-        # Convert all of our input ids and attention masks into
-        # torch tensors, the required datatype
-        X_train = torch.tensor(X_train)
-        X_valid = torch.tensor(X_valid)
-
-        Y_train = torch.tensor(Y_train, dtype=torch.float32)
-        Y_valid = torch.tensor(Y_valid, dtype=torch.float32)
-
-        train_masks = torch.tensor(train_masks, dtype=torch.long)
-        valid_masks = torch.tensor(valid_masks, dtype=torch.long)
-
-        # Create an iterator of our data with torch DataLoader. This helps save on
-        # memory during training because, unlike a for loop,
-        # with an iterator the entire dataset does not need to be loaded into memory
-
-        train_data = TensorDataset(X_train, train_masks, Y_train)
-        train_sampler = RandomSampler(train_data)
-        train_dataloader = DataLoader(train_data,
-                                    sampler=train_sampler,
-                                    batch_size=batch_size)
-
-        validation_data = TensorDataset(X_valid, valid_masks, Y_valid)
-        validation_sampler = SequentialSampler(validation_data)
-        validation_dataloader = DataLoader(validation_data,
-                                        sampler=validation_sampler,
-                                        batch_size=batch_size)
-
-        num_labels = 2
-
-        model = XLNetForMultiLabelSequenceClassification(num_labels=num_labels)
-
-        # Freeze pretrained xlnet parameters
-        model.freeze_xlnet_decoder()
-
-        optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
-
-        num_epochs = 2
-        model_save_path = "xlnet_weights.bin"
-
-
-        if train_mode:
-            model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
-                                                            train_dataloader=train_dataloader,
-                                                            valid_dataloader=validation_dataloader,
-                                                            model_save_path=model_save_path,
-                                                            device=device
-                                                            )
-        else:
-            # load model
-            model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-
-        pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
-        print(pred_probs)
-
-        _, predicts = torch.max(pred_probs, 1)
-        predicts = predicts.cpu()
-        predicts = predicts.numpy().tolist()
-        print(predicts)
-
-        sample[label] = predicts
-        
+    pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+    print(pred_probs)
+    predicts = (pred_probs>0.5) *1 
+    print(predicts)
+    df = pd.DataFrame(pred_probs)
+    df.to_csv("pred_probs_predict_xlnet.csv", index=False)
+    predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
+    for index, label in enumerate(label_cols):
+        sample[label] = predicts[index]
     # save output
     if not os.path.exists("./submission"):
         os.mkdir("./submission")
@@ -142,9 +139,10 @@ def main():
     sample.to_csv("submission_XLNET_{}_{}ep.csv".format(now.timestamp(), num_epochs), index=False)
 
 
-def y_split(data, label):
+def y_split(data, label_cols):
     y = []
-    y.append(data[label])
+    for label in label_cols:
+        y.append(data[label])
     y = np.array(y)
     y = y.reshape(y.shape[1], y.shape[0])
     return y
@@ -206,10 +204,10 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         logits = sigmoid(logits)
 
         if labels is not None:
-            loss_fct = BCEWithLogitsLoss()
+            # loss_fct = BCEWithLogitsLoss()
             # loss_fct = BCELoss()
             # loss_fct = MultiLabelSoftMarginLoss()
-
+            loss_fct = torch.nn.MSELoss()
             loss = loss_fct(logits.view(-1, self.num_labels),
                             labels.view(-1, self.num_labels))
             return loss
@@ -392,7 +390,7 @@ def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
         masks = masks.to(device)
         with torch.no_grad():
             logits = model(input_ids=X, attention_mask=masks)
-            logits = logits.sigmoid().detach().cpu().numpy()
+            # logits = logits.sigmoid().detach().cpu().numpy()
             pred_probs = np.vstack([pred_probs, logits.cpu().numpy()])
 
     return pred_probs
