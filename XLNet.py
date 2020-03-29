@@ -121,7 +121,7 @@ def main():
         optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
         num_epochs = 2
-        model_save_path = "xlnet_weights.bin"
+        model_save_path = "xlnet_{}_weights.bin",format(label)
 
 
         if train_mode:
