@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm, trange
 import matplotlib.pyplot as plt
+import sys
 
 
 sigmoid = torch.nn.Sigmoid()
@@ -29,7 +30,7 @@ def main():
 
     num_embeddings = 512
     # Select a batch size for training
-    batch_size = 32
+    batch_size = 64
     """
     train_mode: True  ==> training
       or        False ==> predict
@@ -41,10 +42,19 @@ def main():
 
     label_cols = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
+    if len(sys.argv)<2:
+        print("Example: python3 XLNet.py <label>")
+        sys.exit()
+
+    label = sys.argv[1]
+
+    if not os.path.exists("./submission"):
+        os.mkdir("./submission")
+
     sample = pd.read_csv("./data/sample_submission.csv")
 
-    for label in label_cols:
-
+    if label:
+        print("Label: {}".format(label))
         tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
         train_text_list = train["comment_text"].values
         test_text_list = test["comment_text"].values
@@ -134,12 +144,7 @@ def main():
         print(predicts)
 
         sample[label] = predicts
-        
-    # save output
-    if not os.path.exists("./submission"):
-        os.mkdir("./submission")
-    now = datetime.datetime.now()
-    sample.to_csv("submission_XLNET_{}_{}ep.csv".format(now.timestamp(), num_epochs), index=False)
+        sample.to_csv("submission_XLNET_{}_{}ep.csv".format( label, num_epochs), index=False)
 
 
 def y_split(data, label):
