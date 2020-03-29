@@ -2,6 +2,7 @@ import datetime
 
 import pandas as pd
 import os
+import sys
 import math
 
 import torch
@@ -37,8 +38,8 @@ def main():
     """
     mode = "train"
 
-    train = pd.read_csv("./data/train.csv")
-    test = pd.read_csv("./data/test.csv")
+    train = pd.read_csv("../data/train.csv")
+    test = pd.read_csv("../data/test.csv")
 
     label_cols = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
@@ -206,10 +207,13 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         if labels is not None:
             # loss_fct = BCEWithLogitsLoss()
             # loss_fct = BCELoss()
-            # loss_fct = MultiLabelSoftMarginLoss()
-            loss_fct = torch.nn.MSELoss()
-            loss = loss_fct(logits.view(-1, self.num_labels),
-                            labels.view(-1, self.num_labels))
+            loss_fct = MultiLabelSoftMarginLoss()
+
+            # loss = loss_fct(logits.view(-1, self.num_labels),
+            #                 labels.view(-1, self.num_labels))
+
+            loss = loss_fct(logits, labels)
+
             return loss
         else:
             return logits
