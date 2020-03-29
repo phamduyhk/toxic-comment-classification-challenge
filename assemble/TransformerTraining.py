@@ -13,7 +13,7 @@ import datetime
 import os
 import sys
 sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), './utils')))
+    os.path.join(os.path.dirname(__file__), '../utils')))
 
 from EarlyStopping import EarlyStopping
 from transformer import TransformerClassification
