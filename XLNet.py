@@ -6,7 +6,7 @@ import math
 
 import torch
 from torch.backends import cudnn
-from torch.nn import BCEWithLogitsLoss, BCELoss, MultiLabelSoftMarginLoss
+from torch.nn import BCEWithLogitsLoss, BCELoss, MultiLabelSoftMarginLoss,CrossEntropyLoss
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from transformers import AdamW, XLNetTokenizer, XLNetModel, XLNetLMHeadModel, XLNetConfig
 from keras.preprocessing.sequence import pad_sequences
@@ -79,8 +79,8 @@ def main():
         X_train = torch.tensor(X_train)
         X_valid = torch.tensor(X_valid)
 
-        Y_train = torch.tensor(Y_train, dtype=torch.float32)
-        Y_valid = torch.tensor(Y_valid, dtype=torch.float32)
+        Y_train = torch.tensor(Y_train, dtype=torch.long)
+        Y_valid = torch.tensor(Y_valid, dtype=torch.long)
 
         train_masks = torch.tensor(train_masks, dtype=torch.long)
         valid_masks = torch.tensor(valid_masks, dtype=torch.long)
@@ -143,10 +143,9 @@ def main():
 
 
 def y_split(data, label):
-    y = []
-    y.append(data[label])
+    y = data[label]
     y = np.array(y)
-    y = y.reshape(y.shape[0], 1)
+    # y = y.reshape(y.shape[0], 1)
     return y
 
 
@@ -205,12 +204,14 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         logits = self.classifier(mean_last_hidden_state)
 
         if labels is not None:
-            loss_fct = BCEWithLogitsLoss()
-            # loss_fct = BCELoss()
+            #loss_fct = BCEWithLogitsLoss()
+            loss_fct = CrossEntropyLoss()
             # loss_fct = MultiLabelSoftMarginLoss()
 
-            loss = loss_fct(logits.view(-1, self.num_labels),
-                            labels.view(-1, self.num_labels))
+            # loss = loss_fct(logits.view(-1, self.num_labels),
+            #                 labels.view(-1, self.num_labels))
+
+            loss = loss_fct(logits, labels)
             return loss
         else:
             return logits
