@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../utils')))
 
 from EarlyStopping import EarlyStopping
-from assembleTransformer import TransformerClassification
+from transformer import TransformerClassification
 from dataloader import Preprocessing
 
 
@@ -180,7 +180,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label_c
                     outputs, _, _ = net(inputs, input_mask)
                     # loss = criterion(outputs, y_true)
                     loss = criterion(outputs, y_true)
-                    preds = (outputs > 0.5) * 1
+                    preds = (outputs.sigmoid() > 0.5) * 1
 
                     # training mode
                     if phase == 'train':
