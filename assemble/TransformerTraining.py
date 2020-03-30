@@ -13,7 +13,7 @@ import datetime
 import os
 import sys
 sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), './utils')))
+    os.path.join(os.path.dirname(__file__), '../utils')))
 
 from EarlyStopping import EarlyStopping
 from transformer import TransformerClassification
@@ -30,10 +30,10 @@ def main(train_mode, load_trained=False, early_stop=False):
     np.random.seed(1234)
     random.seed(1234)
 
-    path = "./data/"
+    path = "../data/"
     train_file = "train.csv"
     test_file = "test.csv"
-    vector_list = "./data/wiki-news-300d-1M.vec"
+    vector_list = "../data/wiki-news-300d-1M.vec"
     max_sequence_length = 512
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
@@ -44,7 +44,7 @@ def main(train_mode, load_trained=False, early_stop=False):
     dataloaders_dict = {"train": train_dl, "val": val_dl}
 
     # define output dataframe
-    sample = pd.read_csv("./data/sample_submission.csv")
+    sample = pd.read_csv("../data/sample_submission.csv")
 
     label_cols = ['toxic', 'severe_toxic', 'obscene',
                   'threat', 'insult', 'identity_hate']
@@ -71,11 +71,9 @@ def main(train_mode, load_trained=False, early_stop=False):
 
     # Define loss function
     # criterion = nn.BCEWithLogitsLoss()
-    # criterion = nn.BCELoss()
 
     """or"""
-    # criterion = nn.MultiLabelSoftMarginLoss()
-    criterion = nn.MSELoss()
+    criterion = nn.MultiLabelSoftMarginLoss()
 
     learning_rate = 3e-5
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
@@ -126,7 +124,7 @@ def main(train_mode, load_trained=False, early_stop=False):
     # save predictions
     if not os.path.exists("./submission"):
         os.mkdir("./submission")
-    sample.to_csv("./submission/submission_Transformer_{}_{}ep.csv".format(
+    sample.to_csv("./submission/submission_Transformer_assemble_{}_{}ep.csv".format(
         datetime.datetime.now().date(), num_epochs), index=False)
 
 
