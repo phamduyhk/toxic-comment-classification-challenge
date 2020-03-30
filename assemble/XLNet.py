@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm, trange
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 
 sigmoid = torch.nn.Sigmoid()
@@ -242,6 +243,12 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         mean_last_hidden_state = torch.mean(last_hidden_state, 1)
         return mean_last_hidden_state
 
+def roc_auc_score_FIXED(y_true, y_pred):
+    try:
+        score = roc_auc_score(y_true, y_pred)
+    except ValueError:
+        score = accuracy_score(y_true, np.rint(y_pred))
+    return score
 
 def train_model(model, num_epochs,
                 optimizer,
@@ -296,6 +303,7 @@ def train_model(model, num_epochs,
         # Update tracking variables
         epoch_train_loss = tr_loss / num_train_samples
         train_loss_set.append(epoch_train_loss)
+
 
         print("Train loss: {}".format(epoch_train_loss))
 
