@@ -203,6 +203,9 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         mean_last_hidden_state = self.pool_hidden_state(last_hidden_state)
         logits = self.classifier(mean_last_hidden_state)
 
+        # [ADD SIGMOID FUNC]
+        logits = logits.sigmoid()
+
         if labels is not None:
             loss_fct = BCEWithLogitsLoss()
             # loss_fct = BCELoss()
@@ -393,7 +396,7 @@ def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
         masks = masks.to(device)
         with torch.no_grad():
             logits = model(input_ids=X, attention_mask=masks)
-            logits = logits.sigmoid()
+            # logits = logits.sigmoid()
             pred_probs = np.vstack([pred_probs, logits.cpu().numpy()])
 
     return pred_probs
