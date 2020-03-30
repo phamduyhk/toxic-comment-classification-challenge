@@ -121,7 +121,7 @@ def main():
         optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
         num_epochs = 2
-        model_save_path = "xlnet_{}_weights.bin",format(label)
+        model_save_path = "xlnet_{}_weights.bin".format(label)
 
 
         if train_mode:
@@ -397,7 +397,6 @@ def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
         masks = masks.to(device)
         with torch.no_grad():
             logits = model(input_ids=X, attention_mask=masks)
-            logits = logits.sigmoid().detach().cpu().numpy()
             pred_probs = np.vstack([pred_probs, logits.cpu().numpy()])
 
     return pred_probs
