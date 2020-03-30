@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../utils')))
 
 from EarlyStopping import EarlyStopping
-from transformer import TransformerClassification
+from assembleTransformer import TransformerClassification
 from dataloader import Preprocessing
 
 
@@ -70,12 +70,12 @@ def main(train_mode, load_trained=False, early_stop=False):
     print("running mode: {}".format("training" if train_mode else "predict"))
 
     # Define loss function
-    # criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCEWithLogitsLoss()
 
     """or"""
-    criterion = nn.MultiLabelSoftMarginLoss()
+    # criterion = nn.MultiLabelSoftMarginLoss()
 
-    learning_rate = 3e-5
+    learning_rate = 2e-5
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
     num_epochs = 50
@@ -106,7 +106,7 @@ def main(train_mode, load_trained=False, early_stop=False):
             outputs, _, _ = net_trained(inputs, input_mask)
             raw_output = outputs.cpu()
             raw_pred = np.vstack([raw_pred, raw_output])
-            preds = (outputs.sigmoid() > 0.5) * 1
+            preds = (outputs > 0.5) * 1
             preds = preds.cpu()
             pred_probs = np.vstack([pred_probs, preds])
     print(raw_pred)
