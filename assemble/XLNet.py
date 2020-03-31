@@ -30,9 +30,9 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
-    num_embeddings = 512
+    num_embeddings = 128
     # Select a batch size for training
-    batch_size = 64
+    batch_size = 16
     """
     mode: train
       or  predict
@@ -62,7 +62,7 @@ def main():
     test["masks"] = test_attention_masks
 
     # train valid split
-    train, valid = train_test_split(train, test_size=0.2, random_state=23)
+    train, valid = train_test_split(train, test_size=0.2, random_state=42)
 
     X_train = train["features"].values.tolist()
     X_valid = valid["features"].values.tolist()
@@ -103,11 +103,11 @@ def main():
     model = XLNetForMultiLabelSequenceClassification(num_labels=len(Y_train[0]))
 
     # Freeze pretrained xlnet parameters
-    model.freeze_xlnet_decoder()
+    model.unfreeze_xlnet_decoder()
 
     optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
-    num_epochs = 4
+    num_epochs = 3
     model_save_path = "xlnet_weights.bin"
 
 
