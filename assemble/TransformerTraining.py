@@ -70,10 +70,10 @@ def main(train_mode, load_trained=False, early_stop=False):
     print("running mode: {}".format("training" if train_mode else "predict"))
 
     # Define loss function
-    criterion = nn.BCEWithLogitsLoss()
+    # criterion = nn.BCEWithLogitsLoss()
 
     """or"""
-    # criterion = nn.MultiLabelSoftMarginLoss()
+    criterion = nn.MultiLabelSoftMarginLoss()
 
     learning_rate = 2e-5
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
