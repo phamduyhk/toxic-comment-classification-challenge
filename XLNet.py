@@ -35,7 +35,7 @@ def main():
     train_mode: True  ==> training
       or        False ==> predict
     """
-    train_mode = True
+    train_mode = False
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
@@ -136,11 +136,7 @@ def main():
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
 
         pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
-        print(pred_probs)
-
-        _, predicts = torch.max(pred_probs, 1)
-        predicts = predicts.cpu()
-        predicts = predicts.numpy().tolist()
+        predicts = pred_probs.tolist()
         print(predicts)
 
         sample[label] = predicts
@@ -397,7 +393,8 @@ def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
         masks = masks.to(device)
         with torch.no_grad():
             logits = model(input_ids=X, attention_mask=masks)
-            pred_probs = np.vstack([pred_probs, logits.cpu().numpy()])
+            _, preds = torch.max(logits, 1)
+            pred_probs = np.vstack([pred_probs, preds.cpu().numpy()])
 
     return pred_probs
 
