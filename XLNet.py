@@ -378,7 +378,8 @@ def load_model(save_path):
 def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
     num_iter = math.ceil(df.shape[0] / batch_size)
 
-    pred_probs = np.array([]).reshape(0, num_labels)
+    #pred_probs = np.array([]).reshape(0, num_labels)
+    pred_probs = np.array([]).reshape(0, 1)
 
     model.to(device)
     model.eval()
