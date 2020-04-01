@@ -37,7 +37,7 @@ def main():
     mode: train
       or  predict
     """
-    mode = "train"
+    mode = "predict"
 
     train = pd.read_csv("../data/train.csv")
     test = pd.read_csv("../data/test.csv")
@@ -125,12 +125,12 @@ def main():
     num_labels = len(label_cols)
 
     sample = pd.read_csv("./data/sample_submission.csv")
-    pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
-    print(pred_probs)
+    raw_data, pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+    print(raw_data)
     predicts = (pred_probs>0.5) *1 
     print(predicts)
-    df = pd.DataFrame(pred_probs)
-    df.to_csv("pred_probs_predict_xlnet.csv", index=False)
+    df = pd.DataFrame(raw_data)
+    df.to_csv("raw_pred_probs_predict_xlnet.csv", index=False)
     predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
     for index, label in enumerate(label_cols):
         sample[label] = predicts[index]
@@ -390,6 +390,7 @@ def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
     num_iter = math.ceil(df.shape[0] / batch_size)
 
     pred_probs = np.array([]).reshape(0, num_labels)
+    raw_data = np.array([]).reshape(0, num_labels)
 
     model.to(device)
     model.eval()
@@ -404,10 +405,11 @@ def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
         masks = masks.to(device)
         with torch.no_grad():
             logits = model(input_ids=X, attention_mask=masks)
+            raw_data = np.vstack([raw_data, logits.cpu().numpy()])
             logits = logits.sigmoid()
             pred_probs = np.vstack([pred_probs, logits.cpu().numpy()])
 
-    return pred_probs
+    return raw_data, pred_probs
 
 
 if __name__ == "__main__":
