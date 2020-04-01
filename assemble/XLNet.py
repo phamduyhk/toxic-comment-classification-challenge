@@ -27,7 +27,7 @@ def main():
     print("GPU Available: {}".format(torch.cuda.is_available()))
     n_gpu = torch.cuda.device_count()
     print("Number of GPU Available: {}".format(n_gpu))
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
     num_embeddings = 128
@@ -124,7 +124,7 @@ def main():
 
     num_labels = len(label_cols)
 
-    sample = pd.read_csv("./data/sample_submission.csv")
+    sample = pd.read_csv("../data/sample_submission.csv")
     raw_data, pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
     print(raw_data)
     predicts = (pred_probs>0.5) *1 
