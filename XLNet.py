@@ -135,8 +135,8 @@ def main():
             # load model
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
 
-        pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
-        predicts = pred_probs.tolist()
+        predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+        
         print(predicts)
 
         sample[label] = predicts
@@ -378,8 +378,7 @@ def load_model(save_path):
 def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
     num_iter = math.ceil(df.shape[0] / batch_size)
 
-    #pred_probs = np.array([]).reshape(0, num_labels)
-    pred_probs = np.array([]).reshape(0, 1)
+    predicts =[]
 
     model.to(device)
     model.eval()
@@ -395,9 +394,12 @@ def generate_predictions(model, df, num_labels, device="cpu", batch_size=32):
         with torch.no_grad():
             logits = model(input_ids=X, attention_mask=masks)
             _, preds = torch.max(logits, 1)
-            pred_probs = np.vstack([pred_probs, preds.cpu().numpy()])
+            preds = preds.cpu()
+            preds = preds.numpy().tolist()
 
-    return pred_probs
+            predicts += preds
+
+    return predicts
 
 
 if __name__ == "__main__":
