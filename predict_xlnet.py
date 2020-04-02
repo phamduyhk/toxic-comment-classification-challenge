@@ -35,11 +35,11 @@ def main():
 
     label_cols = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
-    if len(sys.argv)<2:
-        print("Example: python3 predict_xlnet.py <label>")
-        sys.exit()
+    # if len(sys.argv)<2:
+    #     print("Example: python3 predict_xlnet.py <label>")
+    #     sys.exit()
 
-    label = sys.argv[1]
+    # label = sys.argv[1]
 
     if not os.path.exists("./submission"):
         os.mkdir("./submission")
