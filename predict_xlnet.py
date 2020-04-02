@@ -44,56 +44,58 @@ def main():
     if not os.path.exists("./submission"):
         os.mkdir("./submission")
 
-    sample = pd.read_csv("./data/sample_submission.csv")
+    for label in label_cols:
+        try:
+            sample = pd.read_csv("./data/sample_submission.csv")
+            print("Label: {}".format(label))
+            tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
+            train_text_list = train["comment_text"].values
+            test_text_list = test["comment_text"].values
 
-    if label:
-        print("Label: {}".format(label))
-        tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
-        train_text_list = train["comment_text"].values
-        test_text_list = test["comment_text"].values
+            train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=num_embeddings)
+            test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=num_embeddings)
 
-        train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=num_embeddings)
-        test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=num_embeddings)
+            train_attention_masks = create_attn_masks(train_input_ids)
+            test_attention_masks = create_attn_masks(test_input_ids)
 
-        train_attention_masks = create_attn_masks(train_input_ids)
-        test_attention_masks = create_attn_masks(test_input_ids)
+            # add input ids and attention masks to the dataframe
+            train["features"] = train_input_ids.tolist()
+            train["masks"] = train_attention_masks
 
-        # add input ids and attention masks to the dataframe
-        train["features"] = train_input_ids.tolist()
-        train["masks"] = train_attention_masks
-
-        test["features"] = test_input_ids.tolist()
-        test["masks"] = test_attention_masks
+            test["features"] = test_input_ids.tolist()
+            test["masks"] = test_attention_masks
 
 
-        X_train = train["features"].values.tolist()
+            X_train = train["features"].values.tolist()
 
-        Y_train = y_split(train, label)
-        print("y true: ",Y_train[:5])
+            Y_train = y_split(train, label)
+            print("y true: ",Y_train[:5])
 
-        num_labels = 2
+            num_labels = 2
 
-        num_epochs = 2
+            num_epochs = 2
 
-        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
-        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
-        # model_save_path = "xlnet_{}_weights.bin".format(label)
+            # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
+            model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
+            # model_save_path = "xlnet_{}_weights.bin".format(label)
 
-        model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-        print(model)
+            model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+            print(model)
 
-        # validation
-        train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
-        score = roc_auc_score_FIXED(Y_train, train_predicts)
-        print("Label: {}, ROC_AUC: {}".format(label, score))
+            # validation
+            train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
+            score = roc_auc_score_FIXED(Y_train, train_predicts)
+            print("Label: {}, ROC_AUC: {}".format(label, score))
 
-        predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
-        
-        sample[label] = predicts
-        output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
-        sample.to_csv(output_filename, index=False)
-        print("Label: {}, Output: {}".format(label, output_filename))
+            predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+            
+            sample[label] = predicts
+            output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
+            sample.to_csv(output_filename, index=False)
+            print("Label: {}, Output: {}".format(label, output_filename))
 
+        except Exception as e:
+            print("Label: {} get Error: {}".format(label, e))          
 
 def y_split(data, label):
     y = data[label]
