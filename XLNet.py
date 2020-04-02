@@ -28,9 +28,9 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
-    num_embeddings = 512
+    num_embeddings = 256
     # Select a batch size for training
-    batch_size = 64
+    batch_size = 512
     """
     train_mode: True  ==> training
       or        False ==> predict
@@ -116,11 +116,12 @@ def main():
         model = XLNetForMultiLabelSequenceClassification(num_labels=num_labels)
 
         # Freeze pretrained xlnet parameters
-        model.freeze_xlnet_decoder()
+        # model.freeze_xlnet_decoder()
+        model.unfreeze_xlnet_decoder()
 
         optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
-        num_epochs = 2
+        num_epochs = 3
         model_save_path = "xlnet_{}_weights.bin".format(label)
 
 
