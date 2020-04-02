@@ -75,7 +75,8 @@ def main():
         num_epochs = 2
 
         # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
-        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
+        # model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
+        model_save_path = "xlnet_{}_weights.bin".format(label)
 
         model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
         print(model)
