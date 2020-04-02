@@ -32,7 +32,7 @@ def main():
 
     num_embeddings = 256
     # Select a batch size for training
-    batch_size = 64
+    batch_size = 16
     """
     mode: train
       or  predict
@@ -126,9 +126,7 @@ def main():
 
     sample = pd.read_csv("../data/sample_submission.csv")
     raw_data, pred_probs = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
-    print(raw_data)
     predicts = (pred_probs>0.5) *1 
-    print(predicts)
     df = pd.DataFrame(raw_data)
     df.to_csv("raw_pred_probs_predict_xlnet.csv", index=False)
     predicts = predicts.reshape(predicts.shape[1], predicts.shape[0])
