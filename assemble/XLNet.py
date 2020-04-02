@@ -27,7 +27,7 @@ def main():
     print("GPU Available: {}".format(torch.cuda.is_available()))
     n_gpu = torch.cuda.device_count()
     print("Number of GPU Available: {}".format(n_gpu))
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
     num_embeddings = 256
@@ -37,7 +37,7 @@ def main():
     mode: train
       or  predict
     """
-    mode = "predict"
+    mode = "train"
 
     train = pd.read_csv("../data/train.csv")
     test = pd.read_csv("../data/test.csv")
@@ -100,7 +100,7 @@ def main():
                                        sampler=validation_sampler,
                                        batch_size=batch_size)
 
-    model = XLNetForMultiLabelSequenceClassification(num_labels=len(Y_train[0]))
+    model = XLNetForMultiLabelSequenceClassification(num_labels=len(Y_train[0]), device=device)
 
     # Freeze pretrained xlnet parameters
     model.unfreeze_xlnet_decoder()
@@ -183,9 +183,10 @@ def create_attn_masks(input_ids):
 
 class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
 
-    def __init__(self, num_labels=2):
+    def __init__(self, num_labels=2, device="cpu"):
         super(XLNetForMultiLabelSequenceClassification, self).__init__()
         self.num_labels = num_labels
+        self.device = device
         self.xlnet = XLNetModel.from_pretrained('xlnet-base-cased')
         self.classifier = torch.nn.Linear(768, num_labels)
 
@@ -207,6 +208,7 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
 
         if labels is not None:
             pos_weight = torch.ones([self.num_labels]) * 10
+            pos_weight.to(self.device)
             loss_fct = BCEWithLogitsLoss(pos_weight)
             # loss_fct = BCELoss()
             # loss_fct = MultiLabelSoftMarginLoss()
