@@ -208,7 +208,7 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
 
         if labels is not None:
             pos_weight = torch.ones([self.num_labels]) * 10
-            pos_weight.to(self.device)
+            pos_weight = pos_weight.to(self.device)
             loss_fct = BCEWithLogitsLoss(pos_weight)
             # loss_fct = BCELoss()
             # loss_fct = MultiLabelSoftMarginLoss()
