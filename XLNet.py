@@ -138,7 +138,7 @@ def main():
 
         predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
         
-        print(predicts)
+        # print(predicts)
 
         sample[label] = predicts
         sample.to_csv("submission_XLNET_{}_{}ep.csv".format( label, num_epochs), index=False)
