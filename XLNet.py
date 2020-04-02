@@ -30,12 +30,12 @@ def main():
 
     num_embeddings = 256
     # Select a batch size for training
-    batch_size = 512
+    batch_size = 64
     """
     train_mode: True  ==> training
       or        False ==> predict
     """
-    train_mode = False
+    train_mode = True
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
@@ -122,7 +122,7 @@ def main():
         optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
         num_epochs = 3
-        model_save_path = "xlnet_{}_weights.bin".format(label)
+        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, num_epochs)
 
 
         if train_mode:
