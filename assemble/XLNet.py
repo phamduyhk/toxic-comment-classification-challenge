@@ -30,9 +30,9 @@ def main():
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print("using device: {}".format(device))
 
-    num_embeddings = 128
+    num_embeddings = 256
     # Select a batch size for training
-    batch_size = 16
+    batch_size = 64
     """
     mode: train
       or  predict
@@ -208,7 +208,8 @@ class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
         # logits = logits.sigmoid()
 
         if labels is not None:
-            loss_fct = BCEWithLogitsLoss()
+            pos_weight = torch.ones([64]) * 10
+            loss_fct = BCEWithLogitsLoss(pos_weight)
             # loss_fct = BCELoss()
             # loss_fct = MultiLabelSoftMarginLoss()
 
