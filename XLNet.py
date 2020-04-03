@@ -80,13 +80,13 @@ def main():
         training, valid = train_test_split(train, test_size=0.2, random_state=23)
 
         X_train = training["features"].values.tolist()
-        X_valid = training["features"].values.tolist()
+        X_valid = valid["features"].values.tolist()
 
         Y_train = y_split(training, label)
         Y_valid = y_split(valid, label)
 
         train_masks = training["masks"].values.tolist()
-        valid_masks = training["masks"].values.tolist()
+        valid_masks = valid["masks"].values.tolist()
 
         # Convert all of our input ids and attention masks into
         # torch tensors, the required datatype
@@ -143,7 +143,7 @@ def main():
         else:
             # load model
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-            # print(model)
+            print(model)
 
         # validation
         train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
