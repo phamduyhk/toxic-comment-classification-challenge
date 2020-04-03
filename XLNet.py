@@ -76,6 +76,8 @@ def main():
         test["features"] = test_input_ids.tolist()
         test["masks"] = test_attention_masks
 
+        Y_true = y_split(train, label)
+
         # train valid split
         training, valid = train_test_split(train, test_size=0.2, random_state=23)
 
@@ -143,11 +145,11 @@ def main():
         else:
             # load model
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-            print(model)
+            # print(model)
 
         # validation
         train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
-        score = roc_auc_score_FIXED(Y_train, train_predicts)
+        score = roc_auc_score_FIXED(Y_true, train_predicts)
         print("Label: {}, ROC_AUC: {}".format(label, score))
 
         predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
