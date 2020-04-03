@@ -16,6 +16,7 @@ import pandas as pd
 from tqdm import tqdm, trange
 import matplotlib.pyplot as plt
 import sys
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 
 def main():
@@ -34,64 +35,67 @@ def main():
 
     label_cols = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
-    if len(sys.argv)<2:
-        print("Example: python3 predict_xlnet.py <label>")
-        sys.exit()
+    # if len(sys.argv)<2:
+    #     print("Example: python3 predict_xlnet.py <label>")
+    #     sys.exit()
 
-    label = sys.argv[1]
+    # label = sys.argv[1]
 
     if not os.path.exists("./submission"):
         os.mkdir("./submission")
 
-    sample = pd.read_csv("./data/sample_submission.csv")
+    for label in label_cols:
+        try:
+            sample = pd.read_csv("./data/sample_submission.csv")
+            print("Label: {}".format(label))
+            tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
+            train_text_list = train["comment_text"].values
+            test_text_list = test["comment_text"].values
 
-    if label:
-        print("Label: {}".format(label))
-        tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
-        train_text_list = train["comment_text"].values
-        test_text_list = test["comment_text"].values
+            train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=num_embeddings)
+            test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=num_embeddings)
 
-        train_input_ids = tokenize_inputs(train_text_list, tokenizer, num_embeddings=num_embeddings)
-        test_input_ids = tokenize_inputs(test_text_list, tokenizer, num_embeddings=num_embeddings)
+            train_attention_masks = create_attn_masks(train_input_ids)
+            test_attention_masks = create_attn_masks(test_input_ids)
 
-        train_attention_masks = create_attn_masks(train_input_ids)
-        test_attention_masks = create_attn_masks(test_input_ids)
+            # add input ids and attention masks to the dataframe
+            train["features"] = train_input_ids.tolist()
+            train["masks"] = train_attention_masks
 
-        # add input ids and attention masks to the dataframe
-        train["features"] = train_input_ids.tolist()
-        train["masks"] = train_attention_masks
-
-        test["features"] = test_input_ids.tolist()
-        test["masks"] = test_attention_masks
+            test["features"] = test_input_ids.tolist()
+            test["masks"] = test_attention_masks
 
 
-        X_train = train["features"].values.tolist()
+            X_train = train["features"].values.tolist()
 
-        Y_train = y_split(train, label)
-        print("y true: ",Y_train[:5])
+            Y_train = y_split(train, label)
+            print("y true: ",Y_train[:5])
 
-        num_labels = 2
+            num_labels = 2
 
-        num_epochs = 2
+            num_epochs = 2
 
-        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
-        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
+            # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
+            model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
+            # model_save_path = "xlnet_{}_weights.bin".format(label)
 
-        model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-        print(model)
+            model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+            # print(model)
 
-        # validation
-        train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
-        score = roc_auc_score_FIXED(Y_train, train_predicts)
-        print("Label: {}, ROC_AUC: {}".format(label, score))
+            # validation
+            train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
+            score = roc_auc_score_FIXED(Y_train, train_predicts)
+            print("Label: {}, ROC_AUC: {}".format(label, score))
 
-        predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
-        
-        sample[label] = predicts
-        output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
-        sample.to_csv(output_filename, index=False)
-        print("Label: {}, Output: {}".format(label, output_filename))
+            predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+            
+            # sample[label] = predicts
+            # output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
+            # sample.to_csv(output_filename, index=False)
+            # print("Label: {}, Output: {}".format(label, output_filename))
 
+        except Exception as e:
+            print("Label: {} get Error: {}".format(label, e))          
 
 def y_split(data, label):
     y = data[label]
@@ -131,6 +135,63 @@ def create_attn_masks(input_ids):
         seq_mask = [float(i > 0) for i in seq]
         attention_masks.append(seq_mask)
     return attention_masks
+
+class XLNetForMultiLabelSequenceClassification(torch.nn.Module):
+
+    def __init__(self, num_labels=2):
+        super(XLNetForMultiLabelSequenceClassification, self).__init__()
+        self.num_labels = num_labels
+        self.xlnet = XLNetModel.from_pretrained('xlnet-base-cased')
+        self.classifier = torch.nn.Linear(768, num_labels)
+
+        torch.nn.init.xavier_normal_(self.classifier.weight)
+
+
+    def forward(self, input_ids, token_type_ids=None,
+                attention_mask=None, labels=None):
+        # last hidden layer
+        last_hidden_state = self.xlnet(input_ids=input_ids,
+                                       attention_mask=attention_mask,
+                                       token_type_ids=token_type_ids)
+        # pool the outputs into a mean vector
+        mean_last_hidden_state = self.pool_hidden_state(last_hidden_state)
+        logits = self.classifier(mean_last_hidden_state)
+
+        if labels is not None:
+            #loss_fct = BCEWithLogitsLoss()
+            loss_fct = CrossEntropyLoss()
+            # loss_fct = MultiLabelSoftMarginLoss()
+
+            # loss = loss_fct(logits.view(-1, self.num_labels),
+            #                 labels.view(-1, self.num_labels))
+
+            loss = loss_fct(logits, labels)
+            return loss
+        else:
+            return logits
+
+    def freeze_xlnet_decoder(self):
+        """
+        Freeze XLNet weight parameters. They will not be updated during training.
+        """
+        for param in self.xlnet.parameters():
+            param.requires_grad = False
+
+    def unfreeze_xlnet_decoder(self):
+        """
+        Unfreeze XLNet weight parameters. They will be updated during training.
+        """
+        for param in self.xlnet.parameters():
+            param.requires_grad = True
+
+    def pool_hidden_state(self, last_hidden_state):
+        """
+        Pool the output vectors into a single mean vector
+        """
+        last_hidden_state = last_hidden_state[0]
+        mean_last_hidden_state = torch.mean(last_hidden_state, 1)
+        return mean_last_hidden_state
+
 
 
 def roc_auc_score_FIXED(y_true, y_pred):

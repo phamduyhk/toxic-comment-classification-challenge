@@ -16,18 +16,13 @@ import pandas as pd
 from tqdm import tqdm, trange
 import matplotlib.pyplot as plt
 import sys
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 
 sigmoid = torch.nn.Sigmoid()
 
 
 def main():
-    print("GPU Available: {}".format(torch.cuda.is_available()))
-    n_gpu = torch.cuda.device_count()
-    print("Number of GPU Available: {}".format(n_gpu))
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("using device: {}".format(device))
-
     num_embeddings = 256
     # Select a batch size for training
     batch_size = 64
@@ -37,16 +32,25 @@ def main():
     """
     train_mode = True
 
+    load_trained = True
+
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
 
     label_cols = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
-    if len(sys.argv)<2:
-        print("Example: python3 XLNet.py <label>")
+    if len(sys.argv)<3:
+        print("Example: python3 XLNet.py <label> <device_no(int)>")
         sys.exit()
 
     label = sys.argv[1]
+    device_no = sys.argv[2]
+
+    print("GPU Available: {}".format(torch.cuda.is_available()))
+    n_gpu = torch.cuda.device_count()
+    print("Number of GPU Available: {}".format(n_gpu))
+    device = torch.device("cuda:{}".format(device_no) if torch.cuda.is_available() else "cpu")
+    print("using device: {}".format(device))
 
     if not os.path.exists("./submission"):
         os.mkdir("./submission")
@@ -73,16 +77,16 @@ def main():
         test["masks"] = test_attention_masks
 
         # train valid split
-        train, valid = train_test_split(train, test_size=0.2, random_state=23)
+        training, valid = train_test_split(train, test_size=0.2, random_state=23)
 
-        X_train = train["features"].values.tolist()
-        X_valid = valid["features"].values.tolist()
+        X_train = training["features"].values.tolist()
+        X_valid = training["features"].values.tolist()
 
-        Y_train = y_split(train, label)
+        Y_train = y_split(training, label)
         Y_valid = y_split(valid, label)
 
-        train_masks = train["masks"].values.tolist()
-        valid_masks = valid["masks"].values.tolist()
+        train_masks = training["masks"].values.tolist()
+        valid_masks = training["masks"].values.tolist()
 
         # Convert all of our input ids and attention masks into
         # torch tensors, the required datatype
@@ -121,22 +125,37 @@ def main():
 
         optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
-        num_epochs = 3
-        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, num_epochs)
-
+        num_epochs = 2
+        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
+        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
 
         if train_mode:
-            model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
-                                                            train_dataloader=train_dataloader,
-                                                            valid_dataloader=validation_dataloader,
-                                                            model_save_path=model_save_path,
-                                                            device=device
-                                                            )
+            if load_trained:
+                model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+                # print(model)
+            else:
+                model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
+                                                                train_dataloader=train_dataloader,
+                                                                valid_dataloader=validation_dataloader,
+                                                                model_save_path=model_save_path,
+                                                                device=device
+                                                                )
         else:
             # load model
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+            # print(model)
+
+        # validation
+        train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
+        score = roc_auc_score_FIXED(Y_train, train_predicts)
+        print("Label: {}, ROC_AUC: {}".format(label, score))
 
         predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+        
+        sample[label] = predicts
+        output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
+        sample.to_csv(output_filename, index=False)
+        print("Label: {}, Output: {}".format(label, output_filename))
         
         # print(predicts)
 
@@ -167,6 +186,14 @@ def tokenize_inputs(text_list, tokenizer, num_embeddings=512):
     # pad sequences
     input_ids = pad_sequences(input_ids, maxlen=num_embeddings, dtype="long", truncating="post", padding="post")
     return input_ids
+
+
+def roc_auc_score_FIXED(y_true, y_pred):
+    try:
+        score = roc_auc_score(y_true, y_pred)
+    except ValueError:
+        score = accuracy_score(y_true, np.rint(y_pred))
+    return score
 
 
 def create_attn_masks(input_ids):
