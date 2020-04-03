@@ -23,16 +23,16 @@ sigmoid = torch.nn.Sigmoid()
 
 
 def main():
-    num_embeddings = 256
+    num_embeddings = 512
     # Select a batch size for training
-    batch_size = 64
+    batch_size = 32
     """
     train_mode: True  ==> training
       or        False ==> predict
     """
     train_mode = True
 
-    load_trained = True
+    load_trained = False
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
@@ -118,11 +118,11 @@ def main():
                                         batch_size=batch_size)
 
         num_labels = 2
-        num_epochs = 2
+        num_epochs = 3
 
 
-        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
-        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
+        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020  score: 0.84)
+        model_save_path = "xlnet_{}_{}embed_{}ep_weights.bin".format(label, num_embeddings, 3)
 
         if load_trained:
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
