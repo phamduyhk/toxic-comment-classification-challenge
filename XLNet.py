@@ -118,8 +118,17 @@ def main():
                                         batch_size=batch_size)
 
         num_labels = 2
+        num_epochs = 2
 
-        model = XLNetForMultiLabelSequenceClassification(num_labels=num_labels)
+
+        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
+        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
+
+        if load_trained:
+            model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+            # print(model)
+        else:
+            model = XLNetForMultiLabelSequenceClassification(num_labels=num_labels)
 
         # Freeze pretrained xlnet parameters
         # model.freeze_xlnet_decoder()
@@ -127,21 +136,13 @@ def main():
 
         optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
-        num_epochs = 2
-        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
-        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
-
         if train_mode:
-            if load_trained:
-                model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-                # print(model)
-            else:
-                model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
-                                                                train_dataloader=train_dataloader,
-                                                                valid_dataloader=validation_dataloader,
-                                                                model_save_path=model_save_path,
-                                                                device=device
-                                                                )
+            model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
+                                                            train_dataloader=train_dataloader,
+                                                            valid_dataloader=validation_dataloader,
+                                                            model_save_path=model_save_path,
+                                                            device=device
+                                                            )
         else:
             # load model
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
