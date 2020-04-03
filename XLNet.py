@@ -22,12 +22,6 @@ sigmoid = torch.nn.Sigmoid()
 
 
 def main():
-    print("GPU Available: {}".format(torch.cuda.is_available()))
-    n_gpu = torch.cuda.device_count()
-    print("Number of GPU Available: {}".format(n_gpu))
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("using device: {}".format(device))
-
     num_embeddings = 256
     # Select a batch size for training
     batch_size = 64
@@ -44,11 +38,18 @@ def main():
 
     label_cols = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
-    if len(sys.argv)<2:
-        print("Example: python3 XLNet.py <label>")
+    if len(sys.argv)<3:
+        print("Example: python3 XLNet.py <label> <device_no(int)>")
         sys.exit()
 
     label = sys.argv[1]
+    device_no = sys.argv[2]
+
+    print("GPU Available: {}".format(torch.cuda.is_available()))
+    n_gpu = torch.cuda.device_count()
+    print("Number of GPU Available: {}".format(n_gpu))
+    device = torch.device("cuda:{}".format(device_no) if torch.cuda.is_available() else "cpu")
+    print("using device: {}".format(device))
 
     if not os.path.exists("./submission"):
         os.mkdir("./submission")
@@ -130,7 +131,7 @@ def main():
         if train_mode:
             if load_trained:
                 model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-                print(model)
+                # print(model)
             else:
                 model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
                                                                 train_dataloader=train_dataloader,
