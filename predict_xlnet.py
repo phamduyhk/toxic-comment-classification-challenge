@@ -80,7 +80,7 @@ def main():
             # model_save_path = "xlnet_{}_weights.bin".format(label)
 
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
-            print(model)
+            # print(model)
 
             # validation
             train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
@@ -89,10 +89,10 @@ def main():
 
             predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
             
-            sample[label] = predicts
-            output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
-            sample.to_csv(output_filename, index=False)
-            print("Label: {}, Output: {}".format(label, output_filename))
+            # sample[label] = predicts
+            # output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
+            # sample.to_csv(output_filename, index=False)
+            # print("Label: {}, Output: {}".format(label, output_filename))
 
         except Exception as e:
             print("Label: {} get Error: {}".format(label, e))          
