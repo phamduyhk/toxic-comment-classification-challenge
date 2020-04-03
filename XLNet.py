@@ -37,6 +37,8 @@ def main():
     """
     train_mode = True
 
+    load_trained = True
+
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
 
@@ -121,20 +123,25 @@ def main():
 
         optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01, correct_bias=False)
 
-        num_epochs = 3
-        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, num_epochs)
-
+        num_epochs = 2
+        # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020 | 4label score: 0.84)
+        model_save_path = "xlnet_{}_{}ep_weights.bin".format(label, 3)
 
         if train_mode:
-            model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
-                                                            train_dataloader=train_dataloader,
-                                                            valid_dataloader=validation_dataloader,
-                                                            model_save_path=model_save_path,
-                                                            device=device
-                                                            )
+            if load_trained:
+                model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+                print(model)
+            else:
+                model, train_loss_set, valid_loss_set = train_model(model, num_epochs=num_epochs, optimizer=optimizer,
+                                                                train_dataloader=train_dataloader,
+                                                                valid_dataloader=validation_dataloader,
+                                                                model_save_path=model_save_path,
+                                                                device=device
+                                                                )
         else:
             # load model
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
+            print(model)
 
         predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
         
