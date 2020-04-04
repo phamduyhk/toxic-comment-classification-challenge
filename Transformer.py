@@ -23,7 +23,7 @@ from dataloader import Preprocessing
 preprocessing = Preprocessing()
 
 
-def main(train_mode=True, load_trained=False, early_stop=False):
+def main(train_mode=True, load_trained=True, early_stop=False):
     torch.manual_seed(1234)
     np.random.seed(1234)
     random.seed(1234)
