@@ -66,10 +66,33 @@ def main():
             test["masks"] = test_attention_masks
 
 
-            X_train = train["features"].values.tolist()
+            # X_train = train["features"].values.tolist()
 
-            Y_train = y_split(train, label)
-            print("y true: ",Y_train[:5])
+            # Y_train = y_split(train, label)
+
+             # train valid split
+            training, valid = train_test_split(train, test_size=0.2, random_state=23)
+
+            X_train = training["features"].values.tolist()
+            X_valid = valid["features"].values.tolist()
+
+            Y_train = y_split(training, label)
+            Y_valid = y_split(valid, label)
+
+            train_masks = training["masks"].values.tolist()
+            valid_masks = valid["masks"].values.tolist()
+
+            # Convert all of our input ids and attention masks into
+            # torch tensors, the required datatype
+            X_train = torch.tensor(X_train)
+            X_valid = torch.tensor(X_valid)
+
+            Y_train = torch.tensor(Y_train, dtype=torch.long)
+            Y_valid = torch.tensor(Y_valid, dtype=torch.long)
+
+            train_masks = torch.tensor(train_masks, dtype=torch.long)
+            valid_masks = torch.tensor(valid_masks, dtype=torch.long)
+            
 
             num_labels = 2
 
@@ -82,12 +105,12 @@ def main():
             model, epochs, lowest_eval_loss, train_loss_hist, valid_loss_hist = load_model(model_save_path)
             # print(model)
 
-            # validation
-            train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
-            score = roc_auc_score_FIXED(Y_train, train_predicts)
+            # validation with valid
+            train_predicts = generate_predictions(model, valid, num_labels, device=device, batch_size=batch_size)
+            score = roc_auc_score_FIXED(Y_valid, train_predicts)
             print("Label: {}, ROC_AUC: {}".format(label, score))
 
-            predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
+            # predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
             
             # sample[label] = predicts
             # output_filename = "submission_XLNET_{}_{}_{}ep.csv".format(datetime.datetime.now().date(), label, num_epochs)
