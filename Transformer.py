@@ -33,7 +33,7 @@ def main(train_mode=True, load_trained=False, early_stop=False):
     test_file = "test.csv"
     vector_list = "./data/wiki-news-300d-1M.vec"
     max_sequence_length = 512
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     train_dl, val_dl, test_dl, TEXT = preprocessing.get_data(path=path, train_file=train_file, test_file=test_file,
                                                              vectors=vector_list, max_length=max_sequence_length,
@@ -66,7 +66,7 @@ def main(train_mode=True, load_trained=False, early_stop=False):
         learning_rate = 2e-5
         optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
-        num_epochs = 50
+        num_epochs = 10
         if train_mode:
             net_trained = train_model(net, dataloaders_dict,
                                   criterion, optimizer, num_epochs=num_epochs, label=label, device=device, early_stop=early_stop)
@@ -161,6 +161,8 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, label, 
                     input_mask = (inputs != input_pad)
 
                     outputs, _, _ = net(inputs, input_mask)
+                    # print("outputs size : {}".format(outputs.size()))
+                    # print("labels size : {}".format(labels.size()))
                     loss = criterion(outputs, labels)
 
                     _, preds = torch.max(outputs, 1)
