@@ -149,8 +149,8 @@ def main():
             # print(model)
 
         # validation
-        train_predicts = generate_predictions(model, train, num_labels, device=device, batch_size=batch_size)
-        score = roc_auc_score_FIXED(Y_true, train_predicts)
+        valid_preds = generate_predictions(model, valid, num_labels, device=device, batch_size=batch_size)
+        score = roc_auc_score_FIXED(Y_valid, valid_preds)
         print("Label: {}, ROC_AUC: {}".format(label, score))
 
         predicts = generate_predictions(model, test, num_labels, device=device, batch_size=batch_size)
