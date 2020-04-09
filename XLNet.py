@@ -43,7 +43,7 @@ def main():
         print("Example: python3 XLNet.py <label> <device_no(int)>")
         sys.exit()
 
-    label = sys.argv[1]
+    label_start = int(sys.argv[1])
     device_no = sys.argv[2]
 
     print("GPU Available: {}".format(torch.cuda.is_available()))
@@ -57,7 +57,7 @@ def main():
 
     sample = pd.read_csv("./data/sample_submission.csv")
 
-    if label:
+    for label in label_cols[label_start: label_start+3]:
         print("Label: {}".format(label))
         tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=True)
         train_text_list = train["comment_text"].values
