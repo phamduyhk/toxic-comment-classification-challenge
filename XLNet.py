@@ -32,7 +32,7 @@ def main():
     """
     train_mode = True
 
-    load_trained = False
+    load_trained = True
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
