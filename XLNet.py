@@ -32,7 +32,7 @@ def main():
     """
     train_mode = True
 
-    load_trained = True
+    load_trained = False
 
     train = pd.read_csv("./data/train.csv")
     test = pd.read_csv("./data/test.csv")
@@ -118,7 +118,7 @@ def main():
                                         batch_size=batch_size)
 
         num_labels = 2
-        num_epochs = 3
+        num_epochs = 5
 
 
         # load model: xlnet_label_3ep_weight.bin (trained on 2.4.2020  score: 0.84)
